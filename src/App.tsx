@@ -41,19 +41,15 @@ const colorStyles = {
     default: { border: 'border-gray-700', hoverShadow: 'hover:shadow-gray-500/30', ring: 'hover:ring-gray-500/40', text: 'text-gray-300', bg: 'bg-gray-600', hoverBg: 'hover:bg-gray-500', buttonBg: 'bg-gray-600', buttonHoverBg: 'hover:bg-gray-500' }
 };
 
-// --- WinnerCard Component ---
+// --- WinnerCard Component (Button position fixed) ---
 const WinnerCard = ({ winner }) => {
     const styles = colorStyles[winner.color] || colorStyles.default;
 
     const handleInfoClick = () => {
         console.log(`Mostrar info de: ${winner.name}`);
-        // --- Modal Logic Placeholder ---
-        // 1. Set state to show modal: setShowModal(true); setSelectedWinner(winner);
-        // 2. Render a <ModalComponent winner={selectedWinner} onClose={() => setShowModal(false)} />
-        // 3. Style the ModalComponent with animations, gradients, etc.
+        // Modal Logic Placeholder
     };
 
-    // Variants for staggering animation
     const cardVariants = {
         hidden: { opacity: 0, y: 50, scale: 0.9 },
         visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } }
@@ -61,40 +57,33 @@ const WinnerCard = ({ winner }) => {
 
     return (
         <motion.div
-            className={`relative group bg-gradient-to-br from-gray-800 to-gray-900 p-5 rounded-2xl shadow-xl border ${styles.border} transition-all duration-300 text-center hover:ring-2 ${styles.ring} ${styles.hoverShadow} hover:-translate-y-2`}
-            variants={cardVariants} // Apply variants for staggering
-            // Removed initial/animate here as it's handled by parent's stagger
-            whileHover={{ scale: 1.04, transition: { duration: 0.2 } }} // Enhanced hover
+            className={`relative group bg-gradient-to-br from-gray-800 to-gray-900 p-5 rounded-2xl shadow-xl border ${styles.border} transition-all duration-300 text-center hover:ring-2 ${styles.ring} ${styles.hoverShadow} hover:-translate-y-2 flex flex-col`}
+            variants={cardVariants}
+            whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
         >
-            <h3 className={`text-xl font-bold mb-3 ${styles.text} drop-shadow-md`}>{winner.category}</h3>
-            <div className="overflow-hidden rounded-lg mb-3 border border-gray-700">
-                <motion.img
-                    src={winner.image}
-                    alt={`Ganador: ${winner.name}`}
-                    className="w-full h-60 object-cover " // Removed border here, added to parent div
-                    onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "https://placehold.co/400x600/7F1D1D/FECACA?text=Error+Imagen";
-                        e.target.alt = "Error al cargar la imagen";
-                    }}
-                    whileHover={{ scale: 1.1 }} // Zoom image on hover
-                    transition={{ duration: 0.3 }}
-                />
+            <div className="flex-grow">
+                <h3 className={`text-xl font-bold mb-3 ${styles.text} drop-shadow-md`}>{winner.category}</h3>
+                <div className="overflow-hidden rounded-lg mb-3 border border-gray-700">
+                    <motion.img
+                        src={winner.image}
+                        alt={`Ganador: ${winner.name}`}
+                        className="w-full h-60 object-cover"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://placehold.co/400x600/7F1D1D/FECACA?text=Error+Imagen";
+                            e.target.alt = "Error al cargar la imagen";
+                        }}
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.3 }}
+                    />
+                </div>
+                <p className="text-lg font-semibold text-white tracking-wide">{winner.name}</p>
+                {winner.extra && <p className="text-sm text-gray-400 mt-1 italic">{winner.extra}</p>}
             </div>
-            <p className="text-lg font-semibold text-white tracking-wide">{winner.name}</p>
-            {winner.extra && <p className="text-sm text-gray-400 mt-1 italic">{winner.extra}</p>}
-
-            {/* Animated "Ver info" button */}
             <motion.button
                 onClick={handleInfoClick}
-                className={`absolute top-3 right-3 ${styles.buttonBg} text-white text-xs px-3 py-1 rounded-full shadow ${styles.buttonHoverBg} transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 ${styles.ring}`}
+                className={`mt-4 ${styles.buttonBg} text-white text-xs px-4 py-1.5 rounded-full shadow ${styles.buttonHoverBg} transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 ${styles.ring} self-center`}
                 aria-label={`Ver más información sobre ${winner.name}`}
-                initial={{ x: "100%", opacity: 0 }} // Start off-screen right
-                animate={{
-                    x: "0%", // Animate to original position
-                    opacity: 1,
-                    transition: { delay: 0.1, duration: 0.3, ease: "easeOut" }
-                }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
             >
@@ -106,19 +95,48 @@ const WinnerCard = ({ winner }) => {
 
 
 // --- Main Component ---
-export default function AnimeAwards2025() {
+export default function ShiroAwardsPageComponent() {
     const [showTopButton, setShowTopButton] = useState(false);
-    const mainRef = useRef(null); // Ref for scroll calculations
+    const mainRef = useRef(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    // Framer Motion hooks for parallax effect on background elements
-    const { scrollYProgress } = useScroll({ container: mainRef }); // Use mainRef if body scroll doesn't work as expected
-    const parallaxY1 = useTransform(scrollYProgress, [0, 1], ["0%", "-30%"]); // Slower movement up
-    const parallaxY2 = useTransform(scrollYProgress, [0, 1], ["0%", "-50%"]); // Faster movement up
+    // --- Admin Panel State and Logic ---
+    const [isAdminMode, setIsAdminMode] = useState(false);
+    const [keySequence, setKeySequence] = useState([]);
+    const adminCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
     useEffect(() => {
+        const handleKeyDown = (event) => {
+            const newSequence = [...keySequence, event.key];
+            setKeySequence(newSequence);
+
+            if (newSequence.length >= adminCode.length) {
+                const lastKeys = newSequence.slice(-adminCode.length);
+                if (lastKeys.every((key, index) => key === adminCode[index])) {
+                    console.log("Admin Mode Activated!");
+                    setIsAdminMode(true);
+                    setKeySequence([]);
+                } else if (newSequence.length > adminCode.length * 2) {
+                     setKeySequence(newSequence.slice(-adminCode.length));
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [keySequence]);
+    // --- End Admin Panel Logic ---
+
+
+    const { scrollYProgress } = useScroll({ container: mainRef });
+    const parallaxY1 = useTransform(scrollYProgress, [0, 1], ["0%", "-30%"]);
+    const parallaxY2 = useTransform(scrollYProgress, [0, 1], ["0%", "-50%"]);
+
+    useEffect(() => {
+        // Set document title for this specific awards page
         document.title = "Shiro Awards 2025";
         const handleScroll = () => {
-            // Use scrollY of window or mainRef depending on setup
             const currentScrollY = window.scrollY;
             setShowTopButton(currentScrollY > 300);
         };
@@ -130,7 +148,6 @@ export default function AnimeAwards2025() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    // Variants for section animations
     const sectionVariants = {
         hidden: { opacity: 0, y: 60 },
         visible: {
@@ -139,54 +156,174 @@ export default function AnimeAwards2025() {
             transition: {
                 duration: 0.8,
                 ease: "easeOut",
-                // Stagger children animation: delay between each child
-                staggerChildren: 0.15 // Adjust delay as needed
+                staggerChildren: 0.15
             }
         },
     };
 
-    // Variants for paragraph fade-in
     const paragraphVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } }
     };
 
+    // --- Navigation Links ---
+    // Header Links (External Pages) - For the top bar
+    const baseHeaderLinks = [
+        { href: "/", label: "Premios" }, // Link to this page
+        { href: "/votaciones", label: "Votaciones" },
+        { href: "/traducciones", label: "Traducciones" },
+        { href: "/contacto", label: "Contacto" },
+    ];
+
+    const headerLinks = [
+        ...baseHeaderLinks,
+        ...(isAdminMode ? [{ href: "/admin", label: "Admin" }] : []),
+        { href: "/login", label: "Login" },
+    ];
+
+    // Sticky Nav Links (Internal Page Sections) - For the sticky bar
+    const sectionLinks = [
+        { href: "#temporadas", label: "Temporadas", hoverBg: "hover:bg-pink-600/80" },
+        { href: "#aspect", label: "Aspectos Técnicos", hoverBg: "hover:bg-yellow-600/80" },
+        { href: "#actores", label: "Actores de Voz", hoverBg: "hover:bg-indigo-600/80" },
+        { href: "#generos", label: "Géneros", hoverBg: "hover:bg-red-600/80" },
+    ];
+
     return (
-        // Se añade 'scroll-smooth' para el comportamiento de los enlaces de ancla
         <main ref={mainRef} className="bg-gradient-to-b from-gray-950 to-black text-white font-sans scroll-smooth relative overflow-x-hidden">
 
             {/* Decorative Background Elements with Parallax */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-                {/* Twinkling Stars Background */}
                 <div className="absolute inset-0 opacity-20 animate-twinkle" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.6) 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }}></div>
-                {/* Parallax Blur Gradients */}
                 <motion.div
                     className="w-80 h-80 bg-pink-600/15 blur-3xl rounded-full absolute -top-20 -left-20"
-                    style={{ y: parallaxY1 }} // Apply parallax
+                    style={{ y: parallaxY1 }}
                 />
                 <motion.div
                     className="w-96 h-96 bg-purple-600/15 blur-3xl rounded-full absolute -bottom-40 -right-20"
-                    style={{ y: parallaxY2 }} // Apply parallax
+                    style={{ y: parallaxY2 }}
                 />
             </div>
 
-            {/* Header */}
-            <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-purple-950/80 via-purple-900/70 to-gray-950/60 shadow-xl border-b border-pink-500/30">
+            {/* ===== Top Navigation Bar (Logo Placeholder Added) ===== */}
+            <nav className="relative z-50 bg-gray-950/90 backdrop-blur-md shadow-md border-b border-gray-700/50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-14">
+                        {/* Left Side: Logo Placeholder + Title */}
+                        <div className="flex items-center">
+                             {/* Logo Placeholder Image */}
+                             <img
+                                className="h-8 w-auto mr-3" // Height matches text size, auto width
+                                src="https://placehold.co/100x32/1F2937/4B5563?text=Logo" // Placeholder URL (dark bg, gray text)
+                                alt="Logo Placeholder"
+                                onError={(e) => { e.target.style.display='none'; }} // Hide if placeholder fails
+                             />
+                             {/* Site Title (Shiro Nexus) */}
+                            <a href="/" className="text-white font-bold text-lg hover:text-pink-300 transition-colors">
+                                Shiro Nexus
+                            </a>
+                        </div>
+                        {/* Right Side: Navigation Links */}
+                        <div className="hidden md:block">
+                            <div className="ml-10 flex items-baseline space-x-4">
+                                {/* Using updated headerLinks */}
+                                {headerLinks.map((item) => (
+                                    <a
+                                        key={item.label}
+                                        href={item.href}
+                                        className={`text-gray-300 hover:bg-gray-700/50 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                            (item.label === 'Login') ? 'bg-pink-600/80 hover:bg-pink-500/80' : ''
+                                        } ${
+                                            (item.label === 'Admin') ? 'bg-red-600/80 hover:bg-red-500/80 text-yellow-200' : ''
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Mobile Menu Button */}
+                        <div className="-mr-2 flex md:hidden">
+                            <button
+                                type="button"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
+                                aria-controls="mobile-menu"
+                                aria-expanded={isMobileMenuOpen}
+                            >
+                                <span className="sr-only">Abrir menú principal</span>
+                                {isMobileMenuOpen ? (
+                                    <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                ) : (
+                                    <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {/* Mobile menu */}
+                <AnimatePresence>
+                    {isMobileMenuOpen && (
+                        <motion.div
+                            className="md:hidden"
+                            id="mobile-menu"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                            style={{ overflow: 'hidden' }}
+                        >
+                             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                                {headerLinks.map((item) => (
+                                     <a
+                                        key={item.label + "-mobile"}
+                                        href={item.href}
+                                        className={`text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                                            (item.label === 'Login') ? 'bg-pink-600/80 hover:bg-pink-500/80' : ''
+                                        } ${
+                                            (item.label === 'Admin') ? 'bg-red-600/80 hover:bg-red-500/80 text-yellow-200' : ''
+                                        }`}
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </nav>
+            {/* ===== END of Top Navigation Bar ===== */}
+
+
+            {/* Header (Main Visual Section - Title reverted) */}
+            <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-purple-950/80 via-purple-900/70 to-gray-950/60 shadow-xl">
                 <div className="absolute -top-1/2 left-0 w-full h-[200%] bg-gradient-to-r from-transparent via-pink-400/15 to-transparent animate-[shine_12s_linear_infinite] opacity-60" style={{ transform: 'rotate(15deg)' }}></div>
                 <motion.div
                     className="relative z-10 max-w-5xl mx-auto text-center"
-                    initial={{ opacity: 0, y: -30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, ease: "easeOut" }}
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                       hidden: { opacity: 0 },
+                       visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.2 } }
+                    }}
                 >
-                    <div className="flex justify-center items-center gap-4 mb-4">
+                    {/* Title and Icons */}
+                    <motion.div
+                       className="flex justify-center items-center gap-4 mb-4"
+                       variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
+                    >
                          <motion.span
                             className="text-pink-300 text-4xl"
                             animate={{ y: [0, -12, 0], rotate: [0, 10, -10, 0] }}
                             transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
                             style={{ originX: 0.5, originY: 0.5 }}
                         >⭐</motion.span>
-                        {/* Asegúrate de tener la fuente 'Zen Dots' cargada */}
+                        {/* H1 Title - Back to Shiro Awards 2025 */}
                         <h1 className="text-5xl md:text-7xl font-extrabold bg-gradient-to-r from-pink-300 via-white to-pink-400 text-transparent bg-clip-text tracking-tight font-['Zen_Dots',_sans-serif] drop-shadow-lg animate-text-shimmer">
                             Shiro Awards 2025
                         </h1>
@@ -196,35 +333,30 @@ export default function AnimeAwards2025() {
                             transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 0.4 }}
                             style={{ originX: 0.5, originY: 0.5 }}
                         >🏆</motion.span>
-                    </div>
+                    </motion.div>
+
+                    {/* Description */}
                     <motion.p
                         className="text-xl md:text-2xl text-pink-100 italic mt-4 max-w-2xl mx-auto font-light"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
+                        variants={paragraphVariants}
                     >
                         Celebrando lo mejor del anime del año con estilo.
                     </motion.p>
+
+                    {/* Decorative Line */}
                     <motion.div
                         className="mt-10 w-36 h-1.5 bg-gradient-to-r from-pink-500 via-white to-pink-500 mx-auto rounded-full animate-pulse"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
+                        variants={{ hidden: { scaleX: 0 }, visible: { scaleX: 1 } }}
+                        transition={{ duration: 1, ease: "easeOut" }}
                     ></motion.div>
                 </motion.div>
             </header>
 
-            {/* Sticky Navigation with Enhanced Glassmorphism */}
+            {/* Sticky Navigation (Internal Sections) */}
             <nav className="sticky top-0 z-40 bg-gray-950/70 backdrop-blur-xl py-3 shadow-lg border-b border-gray-500/20">
                  <ul className="flex justify-center flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-pink-100 px-4">
-                    {/* Added microinteraction on tap */}
-                    {[
-                        { href: "#temporadas", label: "Temporadas", hoverBg: "hover:bg-pink-600/80" },
-                        { href: "#aspect", label: "Aspectos Técnicos", hoverBg: "hover:bg-yellow-600/80" },
-                        { href: "#actores", label: "Actores de Voz", hoverBg: "hover:bg-indigo-600/80" },
-                        { href: "#generos", label: "Géneros", hoverBg: "hover:bg-red-600/80" },
-                    ].map(item => (
-                        <motion.li key={item.href} whileTap={{ scale: 0.95 }}>
+                    {sectionLinks.map(item => (
+                        <motion.li key={item.href + "-sticky"} whileTap={{ scale: 0.95 }}>
                             <a href={item.href} className={`px-4 py-1.5 rounded-full ${item.hoverBg} hover:text-white transition-colors duration-200 block`}>
                                 {item.label}
                             </a>
@@ -233,16 +365,16 @@ export default function AnimeAwards2025() {
                 </ul>
             </nav>
 
-            {/* --- Award Sections with Staggering --- */}
-
-            {/* Seasons Section */}
+            {/* Award Sections (Content remains the same) */}
+            {/* ... (Sections code omitted for brevity) ... */}
+             {/* Seasons Section */}
             <motion.section
                 id="temporadas"
                 className="relative z-10 py-24 px-6 max-w-7xl mx-auto"
                 variants={sectionVariants}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, amount: 0.1 }} // Trigger animation earlier
+                viewport={{ once: true, amount: 0.1 }}
             >
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-pink-500 inline-block pb-2 px-4">
@@ -250,15 +382,14 @@ export default function AnimeAwards2025() {
                     </h2>
                     <motion.p
                         className="text-lg text-gray-300 italic max-w-2xl mx-auto"
-                        variants={paragraphVariants} // Inherits visible/hidden from parent
+                        variants={paragraphVariants}
                     >
                         Un repaso a lo mejor de cada estación del año.
                     </motion.p>
                 </div>
-                {/* Grid container applies stagger */}
                 <motion.div
                     className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
-                    variants={sectionVariants} // Use same variants for stagger container
+                    variants={sectionVariants}
                 >
                     {seasonWinnersData.map(winner => (
                         <WinnerCard key={winner.id} winner={winner} />
@@ -356,6 +487,7 @@ export default function AnimeAwards2025() {
                 </motion.div>
             </motion.section>
 
+
             {/* Scroll to Top Button */}
             <AnimatePresence>
                 {showTopButton && (
@@ -373,15 +505,15 @@ export default function AnimeAwards2025() {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 11l7-7 7 7M5 19l7-7 7 7" />
                         </svg>
-                        {/* Or: <ArrowUp size={24} /> */}
                     </motion.button>
                 )}
             </AnimatePresence>
 
             {/* Footer */}
             <footer className="p-8 text-center text-sm text-gray-500 border-t border-gray-700/50 mt-16 relative z-10">
+                 {/* Updated Footer Name back to Awards */}
                 &copy; {new Date().getFullYear()} Shiro Awards by Jesús · Todos los derechos reservados
-                <p className="mt-2 text-xs">Diseño mejorado con React, Tailwind CSS y Framer Motion</p>
+                <p className="mt-2 text-xs">Shiro Nexus: Plataforma de anime, premios, votaciones, traducciones y más.</p> {/* Kept Nexus mention here */}
             </footer>
 
             {/* Global Styles & Custom Animations */}
@@ -390,17 +522,12 @@ export default function AnimeAwards2025() {
 
                 body {
                   font-family: 'Inter', sans-serif;
-                  /* Improve scrollbar styling (optional) */
-                  /* scrollbar-width: thin; */
-                  /* scrollbar-color: #EC4899 #111827; */
                 }
 
-                /* Ensure Zen Dots font is applied */
                  .font-['Zen_Dots',_sans-serif] {
                     font-family: 'Zen Dots', sans-serif;
                 }
 
-                /* Text Shimmer Animation */
                 .animate-text-shimmer {
                   background-size: 200% auto;
                   animation: shimmer 4s linear infinite;
@@ -410,13 +537,11 @@ export default function AnimeAwards2025() {
                   100% { background-position: -200% center; }
                 }
 
-                /* Diagonal Shine Animation */
                 @keyframes shine {
                   0% { transform: translateX(-100%) rotate(15deg); }
                   100% { transform: translateX(100%) rotate(15deg); }
                 }
 
-                /* Twinkling Stars Animation */
                 .animate-twinkle {
                   animation: twinkle 5s linear infinite alternate;
                 }
@@ -426,7 +551,6 @@ export default function AnimeAwards2025() {
                   100% { opacity: 0.1; }
                 }
 
-                /* Smooth scroll behavior */
                 html {
                     scroll-behavior: smooth;
                 }
