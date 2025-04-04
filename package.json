@@ -2,25 +2,22 @@
   "name": "shiro-awards",
   "version": "1.0.0",
   "engines": {
-    "node": "20.x" // Added: Specify Node.js version for Vercel
+    "node": "20.x"
   },
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build", // Changed: Use npx to execute vite
+    "build": "npx vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "framer-motion": "^10.16.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    // Kept your installed version v7.5.0
     "react-router-dom": "^7.5.0"
   },
   "devDependencies": {
-    // Added common type dependencies for React/TS projects
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    // "@types/react-router-dom": "^5.3.3", // Add if you face type issues with router v6/v7 mixups, check correct version
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.24",
