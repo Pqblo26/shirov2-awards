@@ -205,24 +205,27 @@ export default function ShiroAwardsPageComponent() {
                 />
             </div>
 
-            {/* ===== Top Navigation Bar (Logo Placeholder Added) ===== */}
+            {/* ===== Top Navigation Bar (Logo Placeholder, Left Aligned) ===== */}
             <nav className="relative z-50 bg-gray-950/90 backdrop-blur-md shadow-md border-b border-gray-700/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* justify-between pushes left and right groups apart */}
                     <div className="flex items-center justify-between h-14">
-                        {/* Left Side: Logo Placeholder + Title */}
-                        <div className="flex items-center">
+                        {/* Left Side Group: Logo Placeholder + Title */}
+                        {/* This 'a' tag now acts as the container for the left group */}
+                        <a href="/" className="flex items-center flex-shrink-0"> {/* Added flex-shrink-0 */}
                              {/* Logo Placeholder Image */}
                              <img
-                                className="h-8 w-auto mr-3" // Height matches text size, auto width
-                                src="https://placehold.co/100x32/1F2937/4B5563?text=Logo" // Placeholder URL (dark bg, gray text)
+                                className="block h-8 w-auto mr-3" // Ensure image doesn't shrink, added margin
+                                src="https://placehold.co/100x32/1F2937/4B5563?text=Logo"
                                 alt="Logo Placeholder"
-                                onError={(e) => { e.target.style.display='none'; }} // Hide if placeholder fails
+                                onError={(e) => { e.target.style.display='none'; }}
                              />
                              {/* Site Title (Shiro Nexus) */}
-                            <a href="/" className="text-white font-bold text-lg hover:text-pink-300 transition-colors">
+                             <span className="text-white font-bold text-lg hover:text-pink-300 transition-colors">
                                 Shiro Nexus
-                            </a>
-                        </div>
+                             </span>
+                        </a>
+
                         {/* Right Side: Navigation Links */}
                         <div className="hidden md:block">
                             <div className="ml-10 flex items-baseline space-x-4">
@@ -242,6 +245,7 @@ export default function ShiroAwardsPageComponent() {
                                 ))}
                             </div>
                         </div>
+
                         {/* Mobile Menu Button */}
                         <div className="-mr-2 flex md:hidden">
                             <button
