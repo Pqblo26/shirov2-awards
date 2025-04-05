@@ -43,7 +43,7 @@ const previewTranslations = [
     },
 ];
 
-// --- Updated Translation Preview Card Component ---
+// --- Updated Translation Preview Card Component (FIXED) ---
 interface TranslationPreview {
     id: string;
     title: string;
@@ -58,11 +58,11 @@ interface TranslationPreviewProps {
     item: TranslationPreview;
 }
 const TranslationPreviewCard: React.FC<TranslationPreviewProps> = ({ item }) => (
-    // Use motion.div for item animation within stagger
-    <motion.div variants={itemVariants} className="bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl shadow-lg overflow-hidden border border-gray-700/50 hover:border-green-500/50 transition-all duration-300 group">
-        <Link to={item.link} className="flex flex-col sm:flex-row"> {/* Flex layout: row on small screens+ */}
+    // Changed from motion.div to div, removed variants prop
+    <div className="bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl shadow-lg overflow-hidden border border-gray-700/50 hover:border-green-500/50 transition-all duration-300 group h-full flex flex-col"> {/* Added h-full and flex-col for consistency */}
+        <Link to={item.link} className="flex flex-col sm:flex-row flex-grow"> {/* Added flex-grow */}
             {/* Left: Image */}
-            <div className="flex-shrink-0 sm:w-1/3"> {/* Adjust width as needed */}
+            <div className="flex-shrink-0 sm:w-1/3">
                 <img
                     src={item.imageUrl}
                     alt={`Imagen para ${item.title}`}
@@ -73,41 +73,39 @@ const TranslationPreviewCard: React.FC<TranslationPreviewProps> = ({ item }) => 
 
             {/* Right: Content */}
             <div className="p-4 sm:p-5 flex flex-col flex-grow relative">
-                 {/* Tag */}
-                 <span className="absolute top-2 right-2 bg-green-600/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                {/* Tag */}
+                <span className="absolute top-2 right-2 bg-green-600/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full z-10"> {/* Added z-index */}
                     {item.tag}
-                 </span>
+                </span>
 
-                 {/* Title */}
+                {/* Title */}
                 <h4 className="text-base md:text-lg font-semibold mb-1.5 text-white group-hover:text-green-300 transition-colors pr-16"> {/* Padding right to avoid overlap with tag */}
                     {item.title}
                 </h4>
 
-                 {/* Metadata */}
-                 <div className="flex items-center space-x-3 text-xs text-gray-400 mb-2">
-                     <span className="flex items-center">
-                         <span className="mr-1">🗓️</span> {/* Date Icon */}
-                         {item.date}
-                     </span>
-                     <span className="flex items-center truncate"> {/* Truncate if source is too long */}
-                         <span className="mr-1">🏷️</span> {/* Source/Tag Icon */}
-                         {item.source}
-                     </span>
-                     {/* Add comments icon/count if needed */}
-                     {/* <span className="flex items-center"><span className="mr-1">💬</span> 0</span> */}
-                 </div>
+                {/* Metadata */}
+                <div className="flex items-center space-x-3 text-xs text-gray-400 mb-2">
+                    <span className="flex items-center">
+                        <span className="mr-1">🗓️</span> {/* Date Icon */}
+                        {item.date}
+                    </span>
+                    <span className="flex items-center truncate">
+                        <span className="mr-1">🏷️</span> {/* Source/Tag Icon */}
+                        {item.source}
+                    </span>
+                </div>
 
-                 {/* Excerpt */}
-                <p className="text-sm text-gray-400 flex-grow">
+                {/* Excerpt */}
+                <p className="text-sm text-gray-400 flex-grow"> {/* Added flex-grow */}
                     {item.excerpt}
                 </p>
-                 {/* Optional: Read More Link */}
-                 <span className="text-xs text-green-400 mt-2 self-start group-hover:underline">
+                {/* Optional: Read More Link */}
+                <span className="text-xs text-green-400 mt-auto pt-2 self-start group-hover:underline"> {/* Use mt-auto to push down, pt-2 for spacing */}
                     Leer más...
-                 </span>
+                </span>
             </div>
         </Link>
-    </motion.div>
+    </div>
 );
 
 
