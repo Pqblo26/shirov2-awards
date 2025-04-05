@@ -1,14 +1,31 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom'; // Import Link for internal navigation
 import { motion } from 'framer-motion'; // Import motion for animations
-import WinnerCard from '../components/WinnerCard'; // Import WinnerCard if showing previews
+import WinnerCard from '../components/WinnerCard'; // Import WinnerCard for previews
 
 // Sample data for award previews (replace with actual data fetching later)
-// Using the same structure as defined in WinnerCard's expected props
 const previewWinners = [
      { id: "preview-1", category: "Mejor Animación (Preview)", image: "https://placehold.co/400x600/374151/D1D5DB?text=Animación+Ejemplo", name: "Anime Ejemplo A", extra: "Estudio X", color: "yellow" },
      { id: "preview-2", category: "Mejor Drama (Preview)", image: "https://placehold.co/400x600/5A0000/FCA5A5?text=Drama+Ejemplo", name: "Anime Ejemplo B", extra: "Estudio Y", color: "red" },
 ];
+
+// Sample data for translation previews
+const previewTranslations = [
+    { id: "t-prev-1", title: "Avance Capítulo 10 - Manga XYZ", excerpt: "Una breve descripción o extracto de la traducción...", link: "/traducciones/manga-xyz-10" },
+    { id: "t-prev-2", title: "Entrevista Exclusiva - Autor ABC", excerpt: "Los puntos clave de la entrevista traducida...", link: "/traducciones/entrevista-abc" },
+    { id: "t-prev-3", title: "Noticia Importante - Evento Anime", excerpt: "Resumen de la noticia traducida sobre el próximo evento...", link: "/traducciones/noticia-evento" },
+];
+
+// Simple component for Translation Preview Card (can be moved to components later)
+interface TranslationPreviewProps {
+    item: { id: string; title: string; excerpt: string; link: string; }
+}
+const TranslationPreviewCard: React.FC<TranslationPreviewProps> = ({ item }) => (
+    <Link to={item.link} className="group block p-6 bg-gray-800/60 rounded-lg shadow-md hover:bg-gray-700/60 transition-colors border border-gray-700 hover:border-green-500/50">
+        <h4 className="text-lg font-semibold mb-2 text-green-400 group-hover:text-green-300 transition-colors">{item.title}</h4>
+        <p className="text-sm text-gray-400">{item.excerpt}</p>
+    </Link>
+);
 
 
 function HomePage() {
@@ -33,7 +50,6 @@ function HomePage() {
 
 
     return (
-        // Use motion.div for potential page transition animations later
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -80,18 +96,17 @@ function HomePage() {
 
             {/* === Featured Sections Grid === */}
             <motion.section
-                className="py-16 md:py-24 px-6 bg-gray-950" // Slightly different background
+                className="py-16 md:py-20 px-6 bg-gray-950"
                 variants={sectionVariants}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }} // Trigger animation when 20% visible
+                viewport={{ once: true, amount: 0.2 }}
             >
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Explora Nuestras Secciones</h2>
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* Card: Premios */}
                     <motion.div variants={itemVariants}>
                         <Link to="/premios" className="group block p-8 bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl shadow-xl hover:shadow-pink-500/30 border border-transparent hover:border-pink-500/50 transition-all duration-300 h-full flex flex-col">
-                             {/* Placeholder for Icon */}
                              <div className="mb-4 text-pink-400">
                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -105,7 +120,6 @@ function HomePage() {
                     {/* Card: Votaciones */}
                     <motion.div variants={itemVariants}>
                          <Link to="/votaciones" className="group block p-8 bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl shadow-xl hover:shadow-blue-500/30 border border-transparent hover:border-blue-500/50 transition-all duration-300 h-full flex flex-col">
-                             {/* Placeholder for Icon */}
                              <div className="mb-4 text-blue-400">
                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -119,7 +133,6 @@ function HomePage() {
                     {/* Card: Traducciones */}
                     <motion.div variants={itemVariants}>
                          <Link to="/traducciones" className="group block p-8 bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl shadow-xl hover:shadow-green-500/30 border border-transparent hover:border-green-500/50 transition-all duration-300 h-full flex flex-col">
-                            {/* Placeholder for Icon */}
                              <div className="mb-4 text-green-400">
                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -132,18 +145,43 @@ function HomePage() {
                 </div>
             </motion.section>
 
-            {/* === Latest Winners Preview Section (Optional) === */}
+             {/* === Latest Translations Preview Section (NEW) === */}
             <motion.section
-                className="py-16 md:py-24 px-6 bg-gray-900" // Different background again
+                className="py-16 md:py-20 px-6 bg-gray-900" // Another background color
                 variants={sectionVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.2 }}
             >
-                <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Últimos Ganadores Destacados</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Últimas Traducciones</h2>
+                <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     {previewTranslations.map(item => (
+                         <motion.div key={item.id} variants={itemVariants}>
+                             <TranslationPreviewCard item={item} />
+                         </motion.div>
+                     ))}
+                </div>
+                 <div className="text-center mt-12">
+                     <Link
+                        to="/traducciones"
+                        className="text-green-400 hover:text-green-300 hover:underline transition-colors"
+                    >
+                        Ver todas las traducciones &rarr;
+                    </Link>
+                 </div>
+            </motion.section>
+
+            {/* === Latest Winners Preview Section === */}
+            <motion.section
+                className="py-16 md:py-20 px-6 bg-gray-950" // Back to original bg
+                variants={sectionVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+            >
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Ganadores Recientes</h2>
                 <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
                      {previewWinners.map(winner => (
-                         // Apply itemVariants to each WinnerCard for staggered animation
                          <motion.div key={winner.id} variants={itemVariants}>
                              <WinnerCard winner={winner} />
                          </motion.div>
@@ -166,3 +204,4 @@ function HomePage() {
 }
 
 export default HomePage;
+
