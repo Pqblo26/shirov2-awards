@@ -9,22 +9,105 @@ const previewWinners = [
      { id: "preview-2", category: "Mejor Drama (Preview)", image: "https://placehold.co/400x600/5A0000/FCA5A5?text=Drama+Ejemplo", name: "Anime Ejemplo B", extra: "Estudio Y", color: "red" },
 ];
 
-// Sample data for translation previews
+// --- Updated Sample data for translation previews ---
 const previewTranslations = [
-    { id: "t-prev-1", title: "Avance Capítulo 10 - Manga XYZ", excerpt: "Una breve descripción o extracto de la traducción...", link: "/traducciones/manga-xyz-10" },
-    { id: "t-prev-2", title: "Entrevista Exclusiva - Autor ABC", excerpt: "Los puntos clave de la entrevista traducida...", link: "/traducciones/entrevista-abc" },
-    { id: "t-prev-3", title: "Noticia Importante - Evento Anime", excerpt: "Resumen de la noticia traducida sobre el próximo evento...", link: "/traducciones/noticia-evento" },
+    {
+        id: "t-prev-1",
+        title: "Avance Capítulo 10 - Manga XYZ",
+        excerpt: "Una breve descripción o extracto de la traducción del último capítulo...",
+        link: "/traducciones/manga-xyz-10",
+        imageUrl: "https://placehold.co/150x100/111827/4ADE80?text=Manga+XYZ", // Placeholder image
+        tag: "Manga",
+        date: "3 abril, 2025",
+        source: "Fuente Manga XYZ"
+    },
+    {
+        id: "t-prev-2",
+        title: "Entrevista Exclusiva - Autor ABC",
+        excerpt: "Los puntos clave de la entrevista traducida al director/autor...",
+        link: "/traducciones/entrevista-abc",
+        imageUrl: "https://placehold.co/150x100/111827/4ADE80?text=Entrevista", // Placeholder image
+        tag: "Entrevista",
+        date: "1 abril, 2025",
+        source: "Revista Anime Z"
+     },
+    {
+        id: "t-prev-3",
+        title: "Noticia Importante - Evento Anime",
+        excerpt: "Resumen de la noticia traducida sobre el próximo evento importante...",
+        link: "/traducciones/noticia-evento",
+        imageUrl: "https://placehold.co/150x100/111827/4ADE80?text=Noticia", // Placeholder image
+        tag: "Noticia",
+        date: "28 marzo, 2025",
+        source: "Web Oficial Evento"
+    },
 ];
 
-// Simple component for Translation Preview Card (can be moved to components later)
+// --- Updated Translation Preview Card Component ---
+interface TranslationPreview {
+    id: string;
+    title: string;
+    excerpt: string;
+    link: string;
+    imageUrl: string;
+    tag: string;
+    date: string;
+    source: string;
+}
 interface TranslationPreviewProps {
-    item: { id: string; title: string; excerpt: string; link: string; }
+    item: TranslationPreview;
 }
 const TranslationPreviewCard: React.FC<TranslationPreviewProps> = ({ item }) => (
-    <Link to={item.link} className="group block p-6 bg-gray-800/60 rounded-lg shadow-md hover:bg-gray-700/60 transition-colors border border-gray-700 hover:border-green-500/50">
-        <h4 className="text-lg font-semibold mb-2 text-green-400 group-hover:text-green-300 transition-colors">{item.title}</h4>
-        <p className="text-sm text-gray-400">{item.excerpt}</p>
-    </Link>
+    // Use motion.div for item animation within stagger
+    <motion.div variants={itemVariants} className="bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl shadow-lg overflow-hidden border border-gray-700/50 hover:border-green-500/50 transition-all duration-300 group">
+        <Link to={item.link} className="flex flex-col sm:flex-row"> {/* Flex layout: row on small screens+ */}
+            {/* Left: Image */}
+            <div className="flex-shrink-0 sm:w-1/3"> {/* Adjust width as needed */}
+                <img
+                    src={item.imageUrl}
+                    alt={`Imagen para ${item.title}`}
+                    className="w-full h-32 sm:h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/150x100/111827/9CA3AF?text=Error'; }} // Fallback
+                />
+            </div>
+
+            {/* Right: Content */}
+            <div className="p-4 sm:p-5 flex flex-col flex-grow relative">
+                 {/* Tag */}
+                 <span className="absolute top-2 right-2 bg-green-600/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    {item.tag}
+                 </span>
+
+                 {/* Title */}
+                <h4 className="text-base md:text-lg font-semibold mb-1.5 text-white group-hover:text-green-300 transition-colors pr-16"> {/* Padding right to avoid overlap with tag */}
+                    {item.title}
+                </h4>
+
+                 {/* Metadata */}
+                 <div className="flex items-center space-x-3 text-xs text-gray-400 mb-2">
+                     <span className="flex items-center">
+                         <span className="mr-1">🗓️</span> {/* Date Icon */}
+                         {item.date}
+                     </span>
+                     <span className="flex items-center truncate"> {/* Truncate if source is too long */}
+                         <span className="mr-1">🏷️</span> {/* Source/Tag Icon */}
+                         {item.source}
+                     </span>
+                     {/* Add comments icon/count if needed */}
+                     {/* <span className="flex items-center"><span className="mr-1">💬</span> 0</span> */}
+                 </div>
+
+                 {/* Excerpt */}
+                <p className="text-sm text-gray-400 flex-grow">
+                    {item.excerpt}
+                </p>
+                 {/* Optional: Read More Link */}
+                 <span className="text-xs text-green-400 mt-2 self-start group-hover:underline">
+                    Leer más...
+                 </span>
+            </div>
+        </Link>
+    </motion.div>
 );
 
 
@@ -44,8 +127,8 @@ function HomePage() {
     };
 
     const itemVariants = {
-        hidden: { opacity: 0, scale: 0.95 },
-        visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
+        hidden: { opacity: 0, scale: 0.95, y: 20 }, // Added slight y offset
+        visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.5 } }
     };
 
 
@@ -145,17 +228,19 @@ function HomePage() {
                 </div>
             </motion.section>
 
-             {/* === Latest Translations Preview Section (NEW) === */}
+             {/* === Latest Translations Preview Section (NEW Style) === */}
             <motion.section
-                className="py-16 md:py-20 px-6 bg-gray-900" // Another background color
+                className="py-16 md:py-20 px-6 bg-gray-900" // Slightly different background
                 variants={sectionVariants}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
+                viewport={{ once: true, amount: 0.1 }} // Trigger slightly earlier
             >
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Últimas Traducciones</h2>
-                <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Use flexbox for horizontal layout on larger screens if needed, or keep grid */}
+                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-1 gap-6"> {/* Changed to 1 column grid */}
                      {previewTranslations.map(item => (
+                         // Pass itemVariants to the outer motion.div for staggering
                          <motion.div key={item.id} variants={itemVariants}>
                              <TranslationPreviewCard item={item} />
                          </motion.div>
