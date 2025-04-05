@@ -153,7 +153,6 @@ function HomePage() {
         }
     };
     // Animation variants for individual items (cards, etc.)
-    // Defined here in the parent scope
     const itemVariants = {
         hidden: { opacity: 0, y: 20, scale: 0.98 },
         visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } }
@@ -169,52 +168,60 @@ function HomePage() {
         >
             {/* === Hero Section === */}
             <section className="relative text-white pt-28 pb-20 md:pt-40 md:pb-28 px-6 text-center overflow-hidden isolate">
-                {/* Enhanced Background Gradient Animation */}
+                {/* Background Gradient Animation */}
                  <motion.div
-                    className="absolute inset-0 z-[-1] overflow-hidden"
+                    className="absolute inset-0 z-[-2] overflow-hidden" // Lower z-index
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 1 }}
                  >
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-950 to-black"></div>
                     <motion.div
-                        className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-gradient-radial from-pink-500/30 via-transparent to-transparent rounded-full filter blur-3xl"
-                        animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.2, 0.4, 0.2],
-                            x: ['-10%', '0%', '-10%'],
-                            y: ['-20%', '-10%', '-20%'],
-                        }}
+                        className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-gradient-radial from-pink-500/20 via-transparent to-transparent rounded-full filter blur-3xl" // Reduced opacity slightly
+                        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15], x: ['-10%', '0%', '-10%'], y: ['-20%', '-10%', '-20%'] }}
                         transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
                     />
                      <motion.div
-                        className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-gradient-radial from-blue-600/30 via-transparent to-transparent rounded-full filter blur-3xl"
-                        animate={{
-                            scale: [1, 1.1, 1],
-                            opacity: [0.3, 0.15, 0.3],
-                            x: ['-10%', '-20%', '-10%'],
-                            y: ['-20%', '-30%', '-20%'],
-                        }}
+                        className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-gradient-radial from-blue-600/20 via-transparent to-transparent rounded-full filter blur-3xl" // Reduced opacity slightly
+                        animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.1, 0.2], x: ['-10%', '-20%', '-10%'], y: ['-20%', '-30%', '-20%'] }}
                         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 3 }}
                     />
                  </motion.div>
 
+                 {/* Character Image Placeholder (NEW) */}
+                 <motion.div
+                     className="absolute inset-0 z-[-1] flex justify-center items-end pointer-events-none" // Centered horizontally, aligned bottom
+                     initial={{ opacity: 0, y: 50 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 1, delay: 0.3 }}
+                 >
+                     <img
+                         // Use a placeholder showing a character silhouette or similar
+                         src="https://placehold.co/400x600/ffffff/cccccc?text=Personaje+(PNG)"
+                         alt="Personaje Principal"
+                         // Adjust opacity, maybe blur, size, and position
+                         className="max-h-[80vh] md:max-h-[70vh] w-auto object-contain opacity-15 lg:opacity-20" // Example styling
+                         onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }}
+                     />
+                 </motion.div>
 
+
+                {/* Text Content Container */}
                 <motion.div
-                    className="relative z-10"
+                    className="relative z-10" // Ensure text is above image
                     variants={sectionVariants}
                     initial="hidden"
                     animate="visible"
                 >
                     <motion.h1
                         variants={itemVariants}
-                        className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-pink-300"
+                        className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-pink-300 drop-shadow-lg" // Added drop-shadow
                     >
                         Bienvenido a Shiro Nexus
                     </motion.h1>
                     <motion.p
                         variants={itemVariants}
-                        className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed"
+                        className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-10 leading-relaxed" // Slightly brighter text
                     >
                         Tu portal central para explorar premios de anime, participar en votaciones, acceder a traducciones exclusivas y mucho más.
                     </motion.p>
@@ -246,15 +253,12 @@ function HomePage() {
                 viewport={{ once: true, amount: 0.1 }}
             >
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">Explora Nuestras Secciones</h2>
-                {/* The motion.div below applies itemVariants to each FeatureCard */}
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
                     {/* Card: Premios */}
-                     <motion.div variants={itemVariants}> {/* Apply animation to wrapper */}
+                     <motion.div variants={itemVariants}>
                         <FeatureCard
-                            icon={ /* ... SVG ... */
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                </svg>
+                            icon={ /* Trophy Icon */
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg>
                             }
                             title="Premios"
                             description="Descubre los ganadores anuales y lo más destacado de la temporada."
@@ -263,12 +267,10 @@ function HomePage() {
                         />
                      </motion.div>
                      {/* Card: Votaciones */}
-                      <motion.div variants={itemVariants}> {/* Apply animation to wrapper */}
+                      <motion.div variants={itemVariants}>
                          <FeatureCard
-                            icon={ /* ... SVG ... */
-                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                 </svg>
+                            icon={ /* Check Square Icon */
+                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> </svg>
                             }
                             title="Votaciones"
                             description="¡Tu opinión cuenta! Participa en nuestras encuestas y votaciones activas."
@@ -277,12 +279,10 @@ function HomePage() {
                         />
                      </motion.div>
                      {/* Card: Traducciones */}
-                      <motion.div variants={itemVariants}> {/* Apply animation to wrapper */}
+                      <motion.div variants={itemVariants}>
                          <FeatureCard
-                            icon={ /* ... SVG ... */
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
+                            icon={ /* Book Open Icon */
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /> </svg>
                             }
                             title="Traducciones"
                             description="Explora contenido exclusivo, entrevistas y noticias traducidas por nuestro equipo."
@@ -308,10 +308,9 @@ function HomePage() {
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">
                     <span className="text-green-400">Traducciones</span> Recientes
                 </h2>
-                 {/* The motion.div below applies itemVariants to each TranslationPreviewCard */}
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-1 gap-6">
                      {previewTranslations.map(item => (
-                         <motion.div key={item.id} variants={itemVariants}> {/* Apply animation to wrapper */}
+                         <motion.div key={item.id} variants={itemVariants}>
                              <TranslationPreviewCard item={item} />
                          </motion.div>
                      ))}
@@ -341,10 +340,9 @@ function HomePage() {
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">
                    <span className="text-yellow-400">Ganadores</span> Destacados (Awards 2025)
                 </h2>
-                 {/* The motion.div below applies itemVariants to each WinnerCard */}
                 <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
                      {previewWinners.map(winner => (
-                         <motion.div key={winner.id} variants={itemVariants}> {/* Apply animation to wrapper */}
+                         <motion.div key={winner.id} variants={itemVariants}>
                              <WinnerCard winner={winner} />
                          </motion.div>
                      ))}
@@ -361,16 +359,15 @@ function HomePage() {
 
              {/* === Call to Action Section (NEW) === */}
              <motion.section
-                className="py-16 md:py-24 px-6 my-16 md:my-24 relative overflow-hidden rounded-xl max-w-7xl mx-auto bg-gradient-to-r from-blue-900/50 to-purple-900/50" // Added background and max-width
+                className="py-16 md:py-24 px-6 my-16 md:my-24 relative overflow-hidden rounded-xl max-w-7xl mx-auto bg-gradient-to-r from-blue-900/50 to-purple-900/50"
                  variants={sectionVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.2 }}
              >
-                 {/* Background Image Placeholder */}
                  <div className="absolute inset-0 z-0 opacity-10">
-                    <img src="https://placehold.co/1920x600/0A0A0A/222222?text=+" alt="Abstract background pattern" className="w-full h-full object-cover"/> {/* Subtle pattern */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div> {/* Fade overlay */}
+                    <img src="https://placehold.co/1920x600/0A0A0A/222222?text=+" alt="Abstract background pattern" className="w-full h-full object-cover"/>
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div>
                  </div>
 
                  <motion.div variants={itemVariants} className="relative z-10 max-w-3xl mx-auto text-center">
@@ -394,3 +391,4 @@ function HomePage() {
 }
 
 export default HomePage;
+
