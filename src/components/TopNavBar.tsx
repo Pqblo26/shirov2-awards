@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+// Import Link from react-router-dom for internal navigation if needed for active styling later
+// import { NavLink } from 'react-router-dom';
 
 // Define the props interface
 interface TopNavBarProps {
@@ -12,7 +14,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
      // --- Navigation Links ---
     // Base links visible to everyone
     const baseHeaderLinks = [
-        { href: "/", label: "Premios" },
+        // Changed href for Premios to /premios
+        { href: "/premios", label: "Premios" },
         { href: "/votaciones", label: "Votaciones" },
         { href: "/traducciones", label: "Traducciones" },
         { href: "/contacto", label: "Contacto" },
@@ -21,9 +24,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
     // Dynamically create the full list including conditional Admin and Login
     const headerLinks = [
         ...baseHeaderLinks,
-        // Add Admin link only if in admin mode
         ...(isAdminMode ? [{ href: "/admin", label: "Admin" }] : []),
-         // Add Login link (always visible for now)
         { href: "/login", label: "Login" },
     ];
 
@@ -31,13 +32,13 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
          <nav className="relative z-50 bg-gray-950/90 backdrop-blur-md shadow-md border-b border-gray-700/50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-14">
-                    {/* Left Side: Logo Placeholder + Title */}
+                    {/* Left Side: Logo Placeholder + Title (links to '/') */}
                     <a href="/" className="flex items-center flex-shrink-0">
                          <img
                             className="block h-8 w-auto mr-3"
                             src="https://placehold.co/100x32/1F2937/4B5563?text=Logo"
                             alt="Logo Placeholder"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} // Type assertion
+                            onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }}
                          />
                          <span className="text-white font-bold text-lg hover:text-pink-300 transition-colors">
                             Shiro Nexus
@@ -47,10 +48,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
                     {/* Right Side: Navigation Links */}
                     <div className="hidden md:block">
                         <div className="ml-10 flex items-baseline space-x-4">
+                            {/* Using updated headerLinks */}
                             {headerLinks.map((item) => (
-                                <a
+                                <a // Use NavLink here if you want active styling later
                                     key={item.label}
-                                    href={item.href}
+                                    href={item.href} // Standard href for now
                                     className={`text-gray-300 hover:bg-gray-700/50 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                                         (item.label === 'Login') ? 'bg-pink-600/80 hover:bg-pink-500/80' : ''
                                     } ${
@@ -99,7 +101,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
                         style={{ overflow: 'hidden' }}
                     >
                          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                            {headerLinks.map((item) => (
+                            {headerLinks.map((item) => ( // Use updated headerLinks here too
                                  <a
                                     key={item.label + "-mobile"}
                                     href={item.href}

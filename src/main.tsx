@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'; // Import v7 components
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // Import Layout and Page Components
 import MainLayout from './layouts/MainLayout';
+import HomePage from './pages/HomePage'; // Import the new HomePage
 import PremiosPage from './pages/PremiosPage';
 import VotacionesPage from './pages/VotacionesPage';
 import TraduccionesPage from './pages/TraduccionesPage';
@@ -14,16 +15,19 @@ import NotFoundPage from './pages/NotFoundPage';
 
 import './index.css'; // Global styles
 
-// Create the router configuration using createBrowserRouter (object syntax)
+// Create the router configuration using createBrowserRouter
 const router = createBrowserRouter([
   {
     // Root route using the MainLayout
     path: '/',
     element: <MainLayout />,
-    // Define child routes that will render inside MainLayout's <Outlet>
     children: [
       {
-        index: true, // This makes PremiosPage the default for '/'
+        index: true, // index: true now renders HomePage at '/'
+        element: <HomePage />,
+      },
+      {
+        path: 'premios', // New specific path for the awards page
         element: <PremiosPage />,
       },
       {
@@ -44,7 +48,6 @@ const router = createBrowserRouter([
       },
       {
         path: 'admin',
-        // You might add a loader function here later for authentication check
         element: <AdminPage />,
       },
       // Add other child routes here
@@ -53,11 +56,6 @@ const router = createBrowserRouter([
     // errorElement: <RootBoundary />,
   },
   // You could define routes outside the MainLayout here if needed
-  // {
-  //   path: '/some-other-layout',
-  //   element: <OtherLayout />,
-  //   children: [...]
-  // },
 
   // Catch-all 404 route - Placed outside the main layout routes
    {
