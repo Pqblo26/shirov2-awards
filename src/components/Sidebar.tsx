@@ -6,11 +6,12 @@ import { Link } from 'react-router-dom';
 const KofiIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mr-1.5"><path d="M23.88 7.13c-.26-.09-8.28-2.9-8.28-2.9-.21-.08-.48.04-.55.26-.1.3-.19.6-.28.89-.09.29-.01.6.23.76 0 0 6.88 4.78 7.14 5.04.26.26.71.35 1.04.23.69-.26 1.18-1.04 1.04-1.76-.08-.41-.34-.78-.64-1.06zm-11.42 8.9c-2.3 0-4.17-1.86-4.17-4.17 0-2.3 1.87-4.17 4.17-4.17s4.17 1.87 4.17 4.17c0 2.3-1.87 4.17-4.17 4.17zm0-6.8c-1.47 0-2.63 1.17-2.63 2.63s1.17 2.63 2.63 2.63 2.63-1.17 2.63-2.63-1.16-2.63-2.63-2.63zM4.18 19.35h16.6c.46 0 .84-.38.84-.84v-1.1c0-.46-.38-.84-.84-.84H4.18c-.46 0-.84.38-.84.84v1.1c0 .46.38.84.84.84z"></path></svg>;
 const PatreonIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mr-1.5"><path d="M15.385.508c-4.274 0-7.74 3.467-7.74 7.742 0 4.274 3.466 7.74 7.74 7.74 4.274 0 7.74-3.466 7.74-7.74C23.124 3.974 19.66.508 15.385.508zM.015.508h4.663v23H.015v-23z"></path></svg>;
 
-// Updated data for "Work in Progress" widget - using landscape image ratio
+// Updated data for "Work in Progress" widget with 'progress' field
 const wipItems = [
-    { id: 'wip1', title: 'Kijin Gentoushou - 01', status: 'QC', imageUrl: 'https://picsum.photos/seed/wip1/320/180' }, // 16:9 aspect ratio
-    { id: 'wip2', title: 'Manga XYZ - Cap 11', status: 'Traduciendo', imageUrl: 'https://picsum.photos/seed/wip2/320/180' },
-    { id: 'wip3', title: 'Sorairo Utility (TV) - Batch', status: 'Corrección', imageUrl: 'https://picsum.photos/seed/wip3/320/180' },
+    // Added progress field with sample values
+    { id: 'wip1', title: 'Kijin Gentoushou - 01', status: 'QC', imageUrl: 'https://picsum.photos/seed/wip1/320/180', progress: 90 },
+    { id: 'wip2', title: 'Manga XYZ - Cap 11', status: 'Traduciendo', imageUrl: 'https://picsum.photos/seed/wip2/320/180', progress: 45 },
+    { id: 'wip3', title: 'Sorairo Utility (TV) - Batch', status: 'Corrección', imageUrl: 'https://picsum.photos/seed/wip3/320/180', progress: 70 },
 ];
 
 function Sidebar() {
@@ -29,15 +30,14 @@ function Sidebar() {
                 </div>
             </motion.div>
 
-            {/* --- "Trabajando Actualmente" Widget (Redesigned) --- */}
+            {/* --- "Trabajando Actualmente" Widget (Stable Progress) --- */}
             <motion.div variants={widgetVariants} className="bg-gray-800/70 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
                  <h3 className="text-xl font-semibold text-white border-b border-gray-600 px-6 py-4">Trabajando Actualmente</h3>
-                 <ul className="divide-y divide-gray-700/50"> {/* Use divide for separators */}
+                 <ul className="divide-y divide-gray-700/50">
                     {wipItems.map(item => (
-                        // Each item is now a self-contained block
                         <li key={item.id} className="group">
                              {/* Optional Link Wrapper */}
-                             {/* <Link to="#" className="block hover:bg-gray-700/40 transition-colors"> */}
+                            {/* <Link to="#" className="block hover:bg-gray-700/40 transition-colors"> */}
                                 <div className="flex flex-col">
                                      {/* Image on Top */}
                                      <img
@@ -52,14 +52,18 @@ function Sidebar() {
                                          <p className="text-sm font-semibold text-gray-100 group-hover:text-green-300 transition-colors mb-1" title={item.title}>
                                              {item.title}
                                          </p>
-                                         {/* Progress bar placeholder */}
+                                         {/* Progress bar using item.progress */}
                                          <div className="my-1.5 h-1.5 w-full bg-gray-600 rounded-full overflow-hidden">
-                                             <div className="h-full bg-green-500" style={{ width: `${Math.random() * 80 + 10}%` }}></div>
+                                             <div
+                                                className="h-full bg-green-500 rounded-full transition-all duration-500 ease-out" // Added transition
+                                                // Use item.progress here instead of Math.random()
+                                                style={{ width: `${item.progress}%` }}
+                                            ></div>
                                          </div>
                                          <p className="text-xs text-yellow-400 font-medium">{item.status}</p>
                                      </div>
                                 </div>
-                             {/* </Link> */}
+                            {/* </Link> */}
                         </li>
                     ))}
                  </ul>
@@ -72,4 +76,3 @@ function Sidebar() {
 }
 
 export default Sidebar;
-
