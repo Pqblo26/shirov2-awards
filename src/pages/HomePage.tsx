@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'; // Import motion for animations
 import WinnerCard from '../components/WinnerCard'; // Import WinnerCard for previews
 // Import the extracted TranslationPreviewCard component
 import TranslationPreviewCard from '../components/TranslationPreviewCard';
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // --- Sample Data ---
 const previewWinners = [
@@ -101,6 +102,7 @@ function HomePage() {
                      </motion.div>
                  </motion.div>
              </motion.section>
+             <ScrollToTopButton />
         </motion.div>
     );
 }
