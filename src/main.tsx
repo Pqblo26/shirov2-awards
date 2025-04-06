@@ -4,18 +4,19 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // Import Layout and Page Components
 import MainLayout from './layouts/MainLayout';
-import HomePage from './pages/HomePage'; // Import the new HomePage
-import PremiosPage from './pages/PremiosPage';
-import VotacionesPage from './pages/VotacionesPage';
+import HomePage from './pages/HomePage';
+import PremiosPage from './pages/PremiosPage'; // Keep import for potential future use
+import VotacionesPage from './pages/VotacionesPage'; // Keep import
 import TraduccionesPage from './pages/TraduccionesPage';
-import ContactoPage from './pages/ContactoPage';
-import LoginPage from './pages/LoginPage';
-import AdminPage from './pages/AdminPage';
+import SingleTranslationPage from './pages/SingleTranslationPage'; // Import new page
+import ContactoPage from './pages/ContactoPage'; // Keep import
+import LoginPage from './pages/LoginPage'; // Keep import
+import AdminPage from './pages/AdminPage'; // Keep import
 import NotFoundPage from './pages/NotFoundPage';
 
 import './index.css'; // Global styles
 
-// Create the router configuration using createBrowserRouter
+// Create the router configuration
 const router = createBrowserRouter([
   {
     // Root route using the MainLayout
@@ -23,44 +24,45 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       {
-        index: true, // index: true now renders HomePage at '/'
+        index: true, // HomePage at '/'
         element: <HomePage />,
       },
+      // --- ONLY Traducciones routes are active ---
       {
-        path: 'premios', // New specific path for the awards page
-        element: <PremiosPage />,
-      },
-      {
-        path: 'votaciones',
-        element: <VotacionesPage />,
-      },
-      {
-        path: 'traducciones',
+        path: 'traducciones', // List page
         element: <TraduccionesPage />,
       },
       {
-        path: 'contacto',
-        element: <ContactoPage />,
+        path: 'traducciones/:slug', // Detail page with dynamic slug parameter
+        element: <SingleTranslationPage />,
       },
-      {
-        path: 'login',
-        element: <LoginPage />,
-      },
-      {
-        path: 'admin',
-        element: <AdminPage />,
-      },
-      // Add other child routes here
+      // --- Other routes commented out to restrict access ---
+      // {
+      //   path: 'premios',
+      //   element: <PremiosPage />,
+      // },
+      // {
+      //   path: 'votaciones',
+      //   element: <VotacionesPage />,
+      // },
+      // {
+      //   path: 'contacto',
+      //   element: <ContactoPage />,
+      // },
+      // {
+      //   path: 'login',
+      //   element: <LoginPage />,
+      // },
+      // {
+      //   path: 'admin',
+      //   element: <AdminPage />, // Add loader/protection later
+      // },
     ],
-    // Optional: Add an error element for the layout route itself
-    // errorElement: <RootBoundary />,
   },
-  // You could define routes outside the MainLayout here if needed
-
-  // Catch-all 404 route - Placed outside the main layout routes
+  // Catch-all 404 route
    {
      path: '*',
-     element: <NotFoundPage />,
+     element: <NotFoundPage />, // Render custom 404 page
    }
 ]);
 

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 
 // Define types for the props expected by this card
 interface TranslationItem {
-    id: string;
+    id: string; // Used for key
+    slug?: string; // Use slug for URL if available, otherwise fallback to id
     title: string;
-    link: string;
+    link?: string; // Link might be deprecated if we always use slug/id
     imageUrl: string;
     tags: string[];
     date: string;
@@ -19,22 +20,23 @@ interface TranslationItemCardProps {
 
 const TranslationItemCard: React.FC<TranslationItemCardProps> = ({ item }) => {
     // Function to assign colors based on tag content
-    const getTagColor = (tag: string): string => {
+    const getTagColor = (tag: string): string => { /* ... (same as before) ... */
         const lowerTag = tag.toLowerCase();
-        // Main Categories
         if (['anime', 'donghua', 'otros'].includes(lowerTag)) return 'bg-blue-600';
-        // Format Categories
         if (['tv', 'bd', 'ova', 'especial'].includes(lowerTag)) return 'bg-purple-600';
-        // Status Categories
         if (['en progreso'].includes(lowerTag)) return 'bg-yellow-600 text-black';
         if (['finalizado'].includes(lowerTag)) return 'bg-green-600';
-        if (['pausado'].includes(lowerTag)) return 'bg-orange-600'; // New color for Pausado
-        if (['cancelado'].includes(lowerTag)) return 'bg-red-700'; // New color for Cancelado
-        return 'bg-gray-600'; // Default
-    };
+        if (['pausado'].includes(lowerTag)) return 'bg-orange-600';
+        if (['cancelado'].includes(lowerTag)) return 'bg-red-700';
+        return 'bg-gray-600';
+     };
+
+    // Determine the correct link destination (use slug if available, else id)
+    const destination = `/traducciones/${item.slug ?? item.id}`;
 
     return (
-        <Link to={item.link} className="group block overflow-hidden rounded-lg shadow-lg bg-gray-800/80 border border-gray-700/50 hover:border-green-400 transition-all duration-300 hover:shadow-green-500/20 hover:shadow-lg flex flex-col h-full">
+        // Link now points to the dynamic route
+        <Link to={destination} className="group block overflow-hidden rounded-lg shadow-lg bg-gray-800/80 border border-gray-700/50 hover:border-green-400 transition-all duration-300 hover:shadow-green-500/20 hover:shadow-lg flex flex-col h-full">
             {/* Image container with vertical aspect ratio */}
             <div className="relative aspect-[3/4]">
                 <img
@@ -47,10 +49,7 @@ const TranslationItemCard: React.FC<TranslationItemCardProps> = ({ item }) => {
                 {/* Tags Overlay */}
                 <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 z-10">
                     {item.tags.slice(0, 3).map((tag) => (
-                        <span
-                            key={tag}
-                            className={`text-white text-[10px] font-semibold px-1.5 py-0.5 rounded ${getTagColor(tag)} opacity-90 group-hover:opacity-100 transition-opacity shadow`}
-                        >
+                        <span key={tag} className={`text-white text-[10px] font-semibold px-1.5 py-0.5 rounded ${getTagColor(tag)} opacity-90 group-hover:opacity-100 transition-opacity shadow`}>
                             {tag}
                         </span>
                     ))}

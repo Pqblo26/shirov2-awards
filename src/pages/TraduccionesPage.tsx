@@ -1,28 +1,29 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, Link } from 'react-router-dom';
-import TranslationItemCard from '../components/TranslationItemCard';
-import Sidebar from '../components/Sidebar';
-// Import the ScrollToTopButton component (NEW)
-import ScrollToTopButton from '../components/ScrollToTopButton';
+import TranslationItemCard from '../components/TranslationItemCard'; // Use v8 link version
+import Sidebar from '../components/Sidebar'; // Use v9 version
+// ScrollToTopButton might be needed here too if MainLayout doesn't handle it globally
+// import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // --- Sample Data ---
+// Added 'slug' and 'content' fields
 const allTranslationsData = [
-    { id: "t-main-1", title: "Avance Capítulo 10 - Manga XYZ", link: "/traducciones/manga-xyz-10", imageUrl: "https://picsum.photos/seed/mangaXYZ10/300/400", tags: ["Otros", "En Progreso"], date: "2025-04-05" },
-    { id: "t-main-2", title: "Entrevista Exclusiva - Autor ABC", link: "/traducciones/entrevista-abc", imageUrl: "https://picsum.photos/seed/autorABC/300/400", tags: ["Otros", "Finalizado"], date: "2025-04-03" },
-    { id: "t-main-3", title: "Noticia Importante - Evento Anime", link: "/traducciones/noticia-evento", imageUrl: "https://picsum.photos/seed/eventoAnime/300/400", tags: ["Otros", "Finalizado"], date: "2025-04-01" },
-    { id: "t-main-4", title: "Análisis Episodio Final - Anime ZZZ (TV)", link: "/traducciones/analisis-zzz", imageUrl: "https://picsum.photos/seed/animeZZZfinal/300/400", tags: ["Otros", "Anime", "TV", "Finalizado"], date: "2025-03-30" },
-    { id: "t-main-5", title: "Guía de Personajes - Juego AAA", link: "/traducciones/guia-aaa", imageUrl: "https://picsum.photos/seed/juegoAAA/300/400", tags: ["Otros", "En Progreso"], date: "2025-03-25" },
-    { id: "t-main-6", title: "Donghua XYZ - Episodio 5 (BD)", link: "/traducciones/donghua-xyz-5", imageUrl: "https://picsum.photos/seed/donghuaXYZ5/300/400", tags: ["Donghua", "BD", "En Progreso"], date: "2025-03-28" },
-    { id: "t-main-7", title: "OVA Especial - Anime ABC", link: "/traducciones/ova-abc", imageUrl: "https://picsum.photos/seed/animeABCova/300/400", tags: ["Anime", "OVA", "Especial", "Finalizado"], date: "2025-03-15" },
-    { id: "t-main-8", title: "Resumen Novela Ligera Vol. 3", link: "/traducciones/nl-vol3", imageUrl: "https://picsum.photos/seed/novelaLigera3/300/400", tags: ["Otros", "Finalizado"], date: "2025-03-10" },
-    { id: "t-main-9", title: "Manga XYZ - Capítulo 9", link: "/traducciones/manga-xyz-9", imageUrl: "https://picsum.photos/seed/mangaXYZ9/300/400", tags: ["Otros", "En Progreso"], date: "2025-03-29" },
-    { id: "t-main-10", title: "Anime ZZZ - Episodio 11 (TV)", link: "/traducciones/anime-zzz-11", imageUrl: "https://picsum.photos/seed/animeZZZ11/300/400", tags: ["Anime", "TV", "En Progreso"], date: "2025-03-23" },
-    { id: "t-main-11", title: "Web Comic Corto - Autor Y", link: "/traducciones/webcomic-y", imageUrl: "https://picsum.photos/seed/webcomicY/300/400", tags: ["Otros", "Finalizado"], date: "2025-03-05" },
-    { id: "t-main-12", title: "Donghua XYZ - Episodio 4 (BD)", link: "/traducciones/donghua-xyz-4", imageUrl: "https://picsum.photos/seed/donghuaXYZ4/300/400", tags: ["Donghua", "BD", "En Progreso"], date: "2025-03-21" },
-    { id: "t-main-13", title: "Anime Pelicula - Proyecto Pausado", link: "/traducciones/peli-pausada", imageUrl: "https://picsum.photos/seed/peliPausada/300/400", tags: ["Anime", "Pausado"], date: "2025-02-20" },
-    { id: "t-main-14", title: "Manga ABC - Cancelado", link: "/traducciones/manga-abc-cancel", imageUrl: "https://picsum.photos/seed/mangaABCcancel/300/400", tags: ["Otros", "Cancelado"], date: "2025-01-15" },
-    { id: "t-main-15", title: "Donghua QRS - Pausado Indefinidamente", link: "/traducciones/donghua-qrs-pausa", imageUrl: "https://picsum.photos/seed/donghuaQRSpausa/300/400", tags: ["Donghua", "TV", "Pausado"], date: "2025-02-01" },
+    { id: "t-main-1", slug: "manga-xyz-10", title: "Avance Capítulo 10 - Manga XYZ", link: "/traducciones/manga-xyz-10", imageUrl: "https://picsum.photos/seed/mangaXYZ10/300/400", tags: ["Otros", "En Progreso"], date: "2025-04-05", content: "<p>Contenido simulado para Manga XYZ Cap 10...</p>" },
+    { id: "t-main-2", slug: "entrevista-abc", title: "Entrevista Exclusiva - Autor ABC", link: "/traducciones/entrevista-abc", imageUrl: "https://picsum.photos/seed/autorABC/300/400", tags: ["Otros", "Finalizado"], date: "2025-04-03", content: "<p>Contenido simulado para Entrevista ABC...</p>" },
+    { id: "t-main-3", slug: "noticia-evento", title: "Noticia Importante - Evento Anime", link: "/traducciones/noticia-evento", imageUrl: "https://picsum.photos/seed/eventoAnime/300/400", tags: ["Otros", "Finalizado"], date: "2025-04-01", content: "<p>Contenido simulado para Noticia Evento...</p>" },
+    { id: "t-main-4", slug: "analisis-zzz", title: "Análisis Episodio Final - Anime ZZZ (TV)", link: "/traducciones/analisis-zzz", imageUrl: "https://picsum.photos/seed/animeZZZfinal/300/400", tags: ["Otros", "Anime", "TV", "Finalizado"], date: "2025-03-30", content: "<p>Contenido simulado para Análisis ZZZ...</p>" },
+    { id: "t-main-5", slug: "guia-aaa", title: "Guía de Personajes - Juego AAA", link: "/traducciones/guia-aaa", imageUrl: "https://picsum.photos/seed/juegoAAA/300/400", tags: ["Otros", "En Progreso"], date: "2025-03-25", content: "<p>Contenido simulado para Guía AAA...</p>" },
+    { id: "t-main-6", slug: "donghua-xyz-5", title: "Donghua XYZ - Episodio 5 (BD)", link: "/traducciones/donghua-xyz-5", imageUrl: "https://picsum.photos/seed/donghuaXYZ5/300/400", tags: ["Donghua", "BD", "En Progreso"], date: "2025-03-28", content: "<p>Contenido simulado para Donghua XYZ 5...</p>" },
+    { id: "t-main-7", slug: "ova-abc", title: "OVA Especial - Anime ABC", link: "/traducciones/ova-abc", imageUrl: "https://picsum.photos/seed/animeABCova/300/400", tags: ["Anime", "OVA", "Especial", "Finalizado"], date: "2025-03-15", content: "<p>Contenido simulado para OVA ABC...</p>" },
+    { id: "t-main-8", slug: "nl-vol3", title: "Resumen Novela Ligera Vol. 3", link: "/traducciones/nl-vol3", imageUrl: "https://picsum.photos/seed/novelaLigera3/300/400", tags: ["Otros", "Finalizado"], date: "2025-03-10", content: "<p>Contenido simulado para Novela Ligera Vol 3...</p>" },
+    { id: "t-main-9", slug: "manga-xyz-9", title: "Manga XYZ - Capítulo 9", link: "/traducciones/manga-xyz-9", imageUrl: "https://picsum.photos/seed/mangaXYZ9/300/400", tags: ["Otros", "En Progreso"], date: "2025-03-29", content: "<p>Contenido simulado para Manga XYZ Cap 9...</p>" },
+    { id: "t-main-10", slug: "anime-zzz-11", title: "Anime ZZZ - Episodio 11 (TV)", link: "/traducciones/anime-zzz-11", imageUrl: "https://picsum.photos/seed/animeZZZ11/300/400", tags: ["Anime", "TV", "En Progreso"], date: "2025-03-23", content: "<p>Contenido simulado para Anime ZZZ Ep 11...</p>" },
+    { id: "t-main-11", slug: "webcomic-y", title: "Web Comic Corto - Autor Y", link: "/traducciones/webcomic-y", imageUrl: "https://picsum.photos/seed/webcomicY/300/400", tags: ["Otros", "Finalizado"], date: "2025-03-05", content: "<p>Contenido simulado para Web Comic Y...</p>" },
+    { id: "t-main-12", slug: "donghua-xyz-4", title: "Donghua XYZ - Episodio 4 (BD)", link: "/traducciones/donghua-xyz-4", imageUrl: "https://picsum.photos/seed/donghuaXYZ4/300/400", tags: ["Donghua", "BD", "En Progreso"], date: "2025-03-21", content: "<p>Contenido simulado para Donghua XYZ 4...</p>" },
+    { id: "t-main-13", slug: "peli-pausada", title: "Anime Pelicula - Proyecto Pausado", link: "/traducciones/peli-pausada", imageUrl: "https://picsum.photos/seed/peliPausada/300/400", tags: ["Anime", "Pausado"], date: "2025-02-20", content: "<p>Contenido simulado para Pelicula Pausada...</p>" },
+    { id: "t-main-14", slug: "manga-abc-cancel", title: "Manga ABC - Cancelado", link: "/traducciones/manga-abc-cancel", imageUrl: "https://picsum.photos/seed/mangaABCcancel/300/400", tags: ["Otros", "Cancelado"], date: "2025-01-15", content: "<p>Contenido simulado para Manga ABC Cancelado...</p>" },
+    { id: "t-main-15", slug: "donghua-qrs-pausa", title: "Donghua QRS - Pausado Indefinidamente", link: "/traducciones/donghua-qrs-pausa", imageUrl: "https://picsum.photos/seed/donghuaQRSpausa/300/400", tags: ["Donghua", "TV", "Pausado"], date: "2025-02-01", content: "<p>Contenido simulado para Donghua QRS Pausado...</p>" },
 ];
 
 // Define types for data and state
@@ -37,10 +38,11 @@ function TraduccionesPage() {
     useEffect(() => { document.title = "Traducciones | Shiro Nexus"; }, []);
 
     // --- State ---
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // Keep loading state
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>(initialTag ? [initialTag] : []);
     const [sortBy, setSortBy] = useState<SortOption>('newest');
+    // Removed pagination state
 
      // Simulate loading data
      useEffect(() => { const timer = setTimeout(() => { setIsLoading(false); }, 500); return () => clearTimeout(timer); }, []);
@@ -120,14 +122,8 @@ function TraduccionesPage() {
     );
 
     return (
-        // Changed main wrapper to React.Fragment as motion.div was redundant with containerVariants on inner div
-        <>
-            <motion.div
-                className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-            >
+        <> {/* Changed to Fragment */}
+            <motion.div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" initial="hidden" animate="visible" variants={containerVariants} >
                 {/* Page Title & Description */}
                 <motion.h1 variants={itemVariants} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 text-green-400">Traducciones</motion.h1>
                 <motion.p variants={itemVariants} className="text-center text-gray-400 mb-12 md:mb-16 max-w-2xl mx-auto"> Explora nuestras últimas traducciones...</motion.p>
@@ -192,11 +188,9 @@ function TraduccionesPage() {
 
                 </div> {/* End Grid Layout */}
             </motion.div>
-
-             {/* Render ScrollToTopButton outside the main page container if needed,
-                 or ensure its fixed positioning works correctly within */}
-             <ScrollToTopButton />
-        </> // Changed main wrapper to React.Fragment
+            {/* Add ScrollToTopButton if it's not part of MainLayout */}
+            {/* <ScrollToTopButton /> */}
+        </>
     );
 }
 

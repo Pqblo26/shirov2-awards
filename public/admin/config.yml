@@ -1,0 +1,73 @@
+# Configuración del Backend (Donde se guarda el contenido)
+backend:
+  name: github # Usamos GitHub
+  repo: Pqblo26/shirov2-awards # Reemplaza con tu usuario/repositorio si es diferente
+  branch: main # La rama donde se guardarán los cambios
+  # Para despliegues en Vercel/Netlify con autenticación Git Gateway/Identity,
+  # podrías necesitar configurar 'base_url' y 'auth_endpoint' más adelante.
+  # Por ahora, para probar localmente o con auth de GitHub, esto es suficiente.
+  # Ver docs de Decap CMS y Vercel para detalles de autenticación en producción.
+  # commit_messages: # Opcional: Personaliza mensajes de commit
+  #   create: 'Create {{collection}} “{{slug}}”'
+  #   update: 'Update {{collection}} “{{slug}}”'
+  #   delete: 'Delete {{collection}} “{{slug}}”'
+  #   uploadMedia: 'Upload “{{path}}”'
+  #   deleteMedia: 'Delete “{{path}}”'
+
+# Configuración de Media (Imágenes, etc.)
+# Guarda imágenes en /public/images/uploads, accesibles desde /images/uploads
+media_folder: "public/images/uploads" # Ruta relativa a la raíz del proyecto donde se guardan las imágenes
+public_folder: "/images/uploads" # Ruta pública para acceder a las imágenes en la web
+
+# Configuración de Colecciones (Tipos de Contenido)
+collections:
+  # --- Colección para las Traducciones ---
+  - name: "traducciones" # Identificador interno (¡importante!)
+    label: "Traducciones" # Nombre visible en la interfaz del CMS
+    label_singular: "Traducción" # Nombre singular
+    folder: "content/traducciones" # Carpeta donde se guardarán los archivos .md (relativa a la raíz)
+    create: true # Permitir crear nuevas traducciones
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}" # Cómo se generará el nombre del archivo (ej: 2025-04-06-titulo-manga)
+    # Define los campos editables para cada traducción
+    fields:
+      - { label: "Título", name: "title", widget: "string" }
+      - { label: "Fecha de Publicación", name: "date", widget: "datetime" }
+      - { label: "Imagen Destacada", name: "imageUrl", widget: "image", required: false }
+      - { label: "Tags", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false } # Lista simple de tags de texto
+      # Widget 'select' para el estado, con las opciones definidas
+      - label: "Estado"
+        name: "status"
+        widget: "select"
+        options: ["En Progreso", "Finalizado", "Pausado", "Cancelado"]
+        default: "En Progreso"
+        required: false # Hacer opcional si no siempre aplica
+      # Widget 'select' para la categoría principal
+      - label: "Categoría Principal"
+        name: "mainCategory"
+        widget: "select"
+        options: ["Anime", "Donghua", "Otros"] # Añade más si es necesario
+        required: false
+      # Widget 'select' para el formato
+      - label: "Formato"
+        name: "format"
+        widget: "select"
+        options: ["TV", "BD", "OVA", "Especial"] # Añade más si es necesario
+        required: false
+      - { label: "Fuente Original", name: "source", widget: "string", required: false }
+      - { label: "Extracto Corto", name: "excerpt", widget: "text", required: false }
+      # Contenido principal de la traducción usando Markdown
+      - { label: "Contenido Principal", name: "body", widget: "markdown" }
+
+  # --- Aquí añadirías otras colecciones en el futuro ---
+  # Ejemplo: Colección para Premios
+  # - name: "premios"
+  #   label: "Premios"
+  #   folder: "content/premios"
+  #   create: true
+  #   fields:
+  #     - { label: "Año", name: "year", widget: "number" }
+  #     - { label: "Categoría", name: "category", widget: "string" }
+  #     - { label: "Ganador", name: "winner", widget: "string" }
+  #     - { label: "Imagen", name: "image", widget: "image", required: false }
+  #     - { label: "Color Tema", name: "color", widget: "string", required: false } # Podría ser un select
+  #     - { label: "Detalles", name: "details", widget: "markdown", required: false }
