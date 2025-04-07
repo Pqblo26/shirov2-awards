@@ -22,45 +22,51 @@ collections:
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Fecha de Publicación", name: "date", widget: "datetime" }
       - { label: "Imagen Destacada", name: "imageUrl", widget: "image", required: false }
-      - { label: "Tags (Adicionales)", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false, hint: "Tags extra aparte de estado, categoría, formato, etc." } # Hint añadido
+      - { label: "Tags (Adicionales)", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false, hint: "Tags extra aparte de estado, categoría, formato, etc." }
       - label: "Estado"
         name: "status"
         widget: "select"
         options: ["En Progreso", "Finalizado", "Pausado", "Cancelado"]
         default: "En Progreso"
         required: false
+
+      # --- NUEVO CAMPO: Progreso ---
+      - label: "Progreso (%)"
+        name: "progress"
+        widget: "number"
+        required: false
+        value_type: "int" # Guardar como entero
+        min: 0
+        max: 100
+        step: 5 # Incrementos de 5%
+        hint: "Porcentaje de completado (0-100). Usado para el widget 'Trabajando Actualmente'."
+
       - label: "Categoría Principal"
         name: "mainCategory"
         widget: "select"
         options: ["Anime", "Donghua", "Otros"]
         required: false
-
-      # --- Campo 'format_select' MODIFICADO ---
-      - label: "Formato (TV/Película/OVA...)" # Etiqueta actualizada
+      - label: "Formato (TV/Película/OVA...)"
         name: "format_select"
         widget: "select"
-        options: ["TV", "OVA", "Especial", "Película", "Otro"] # Opciones ACTUALIZADAS
+        options: ["TV", "OVA", "Especial", "Película", "Otro"]
         required: false
       - label: "Especificar Otro Formato"
         name: "format_other"
         widget: "string"
         required: false
         condition: { field: "format_select", value: "Otro" }
-
-      # --- NUEVO CAMPO 'specification_select' ---
       - label: "Especificaciones (MKV/MP4...)"
         name: "specification_select"
         widget: "select"
-        options: ["MKV", "MP4", "AVI", "Otro"] # Opciones de ejemplo
+        options: ["MKV", "MP4", "AVI", "Otro"]
         required: false
       - label: "Especificar Otra Especificación"
         name: "specification_other"
         widget: "string"
         required: false
         condition: { field: "specification_select", value: "Otro" }
-
-      # --- Campos restantes sin cambios en tipo de widget ---
-      - label: "Fuente Original / Grupo" # Mantenemos select + other
+      - label: "Fuente Original / Grupo"
         name: "source_select"
         widget: "select"
         options: ["ShiroSubs", "Fuente Oficial", "Otro Grupo", "N/A", "Otro"]
@@ -70,7 +76,7 @@ collections:
         widget: "string"
         required: false
         condition: { field: "source_select", value: "Otro" }
-      - label: "Resolución" # Mantenemos select + other
+      - label: "Resolución"
         name: "resolution_select"
         widget: "select"
         options: ["1920x1080", "1280x720", "2560x1440", "3840x2160", "SD", "Otro"]
@@ -80,7 +86,7 @@ collections:
         widget: "string"
         required: false
         condition: { field: "resolution_select", value: "Otro" }
-      - label: "Codec de Video" # Mantenemos select + other
+      - label: "Codec de Video"
         name: "videoCodec_select"
         widget: "select"
         options: ["H.265/HEVC", "H.264/AVC", "AV1", "VP9", "Otro"]
@@ -90,7 +96,7 @@ collections:
         widget: "string"
         required: false
         condition: { field: "videoCodec_select", value: "Otro" }
-      - label: "Codec de Audio" # Mantenemos select + other
+      - label: "Codec de Audio"
         name: "audioCodec_select"
         widget: "select"
         options: ["AAC", "FLAC", "Opus", "AC3", "DTS", "Otro"]
@@ -106,49 +112,23 @@ collections:
         widget: "string"
         required: false
         hint: "Enlace a web oficial, MyAnimeList, etc. o N/A"
-
-      # --- Campo Lista para Descargas (sin cambios aquí) ---
       - label: "Enlaces de Descarga"
         name: "downloads"
         widget: "list"
+        # ... (resto de la configuración de downloads) ...
         label_singular: "Enlace de Descarga"
         summary: "{{fields.quality_select}} [{{fields.format_select}}] - {{fields.server_select}}"
         required: false
         fields:
-          - label: "Calidad"
-            name: "quality_select"
-            widget: "select"
-            options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"]
-            required: false
-          - label: "Especificar Otra Calidad"
-            name: "quality_other"
-            widget: "string"
-            required: false
-            condition: { field: "quality_select", value: "Otro" }
-          - label: "Formato (Archivo)"
-            name: "format_select"
-            widget: "select"
-            options: ["MKV", "MP4", "AVI", "Otro"]
-            required: false
-          - label: "Especificar Otro Formato Archivo"
-            name: "format_other"
-            widget: "string"
-            required: false
-            condition: { field: "format_select", value: "Otro" }
-          - label: "Servidor"
-            name: "server_select"
-            widget: "select"
-            options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"]
-            required: false
-          - label: "Especificar Otro Servidor"
-            name: "server_other"
-            widget: "string"
-            required: false
-            condition: { field: "server_select", value: "Otro" }
+          - { label: "Calidad", name: "quality_select", widget: "select", options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"], required: false }
+          - { label: "Especificar Otra Calidad", name: "quality_other", widget: "string", required: false, condition: { field: "quality_select", value: "Otro" } }
+          - { label: "Formato (Archivo)", name: "format_select", widget: "select", options: ["MKV", "MP4", "AVI", "Otro"], required: false }
+          - { label: "Especificar Otro Formato Archivo", name: "format_other", widget: "string", required: false, condition: { field: "format_select", value: "Otro" } }
+          - { label: "Servidor", name: "server_select", widget: "select", options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"], required: false }
+          - { label: "Especificar Otro Servidor", name: "server_other", widget: "string", required: false, condition: { field: "server_select", value: "Otro" } }
           - { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" }
           - { label: "Notas Adicionales", name: "notes", widget: "string", required: false, hint: "Ej: v2, Parche, Incluye extras" }
 
-      # Contenido principal (Markdown)
       - { label: "Contenido Principal (Markdown)", name: "body", widget: "markdown", required: false }
 
   # --- Otras colecciones (ejemplo) ---
