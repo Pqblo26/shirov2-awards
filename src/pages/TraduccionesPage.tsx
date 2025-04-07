@@ -1,261 +1,198 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams, Link } from 'react-router-dom';
-import TranslationItemCard from '../components/TranslationItemCard';
-import Sidebar from '../components/Sidebar';
-import matter from 'gray-matter';
-import ScrollToTopButton from '../components/ScrollToTopButton';
+import React, { useEffect, useState } from 'react'; // Added useEffect, useState
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import matter from 'gray-matter'; // Needed to parse frontmatter
 
-// Define structure for parsed data - Added specification field
-interface TranslationItemData {
-    id: string;
-    slug: string;
-    filename: string;
-    title: string;
-    link: string;
-    imageUrl?: string;
-    tags?: string[]; // Combined tags for filtering
-    date: string;
-    status?: string;
-    mainCategory?: string;
-    format?: string; // Will store the final format value (TV, OVA...)
-    specification?: string; // NEW: Will store the final spec value (MKV, MP4...)
-    source?: string; // Will store the final source value
-    excerpt?: string;
+// Simple SVG icons (KofiIcon, PatreonIcon remain the same)
+const KofiIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mr-1.5"><path d="M23.88 7.13c-.26-.09-8.28-2.9-8.28-2.9-.21-.08-.48.04-.55.26-.1.3-.19.6-.28.89-.09.29-.01.6.23.76 0 0 6.88 4.78 7.14 5.04.26.26.71.35 1.04.23.69-.26 1.18-1.04 1.04-1.76-.08-.41-.34-.78-.64-1.06zm-11.42 8.9c-2.3 0-4.17-1.86-4.17-4.17 0-2.3 1.87-4.17 4.17-4.17s4.17 1.87 4.17 4.17c0 2.3-1.87 4.17-4.17 4.17zm0-6.8c-1.47 0-2.63 1.17-2.63 2.63s1.17 2.63 2.63 2.63 2.63-1.17 2.63-2.63-1.16-2.63-2.63-2.63zM4.18 19.35h16.6c.46 0 .84-.38.84-.84v-1.1c0-.46-.38-.84-.84-.84H4.18c-.46 0-.84.38-.84.84v1.1c0 .46.38.84.84.84z"></path></svg>;
+const PatreonIcon = () => <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mr-1.5"><path d="M15.385.508c-4.274 0-7.74 3.467-7.74 7.742 0 4.274 3.466 7.74 7.74 7.74 4.274 0 7.74-3.466 7.74-7.74C23.124 3.974 19.66.508 15.385.508zM.015.508h4.663v23H.015v-23z"></path></svg>;
+
+// --- Define Structure for WIP items from the new collection ---
+interface WipItemData {
+    id: string; // slug from filename
+    title?: string;
+    image?: string;
+    wip_status?: string; // Matches CMS field name
+    progress?: number;
+    link?: string; // Optional link to main translation page
+    order?: number; // Optional order field
+    date?: string; // Optional date field (hidden in CMS) for sorting
 }
 
-type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
 
-// --- Helper function to get display value from select/other pairs ---
-// (Copied from SingleTranslationPage logic)
-const getDisplayValue = (selectValue?: string, otherValue?: string): string | undefined => {
-    if (selectValue === "Otro") {
-        return otherValue || undefined; // Return custom value if "Otro" is selected
-    }
-    return selectValue; // Otherwise return the selected value
-};
+// --- Updated Sidebar Component ---
+function Sidebar() {
+    const sidebarVariants = { hidden: { opacity: 0, x: 30 }, visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: "easeOut", delay: 0.2 } } };
+    const widgetVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } } };
 
+    // --- State for loading WIP items ---
+    const [wipItems, setWipItems] = useState<WipItemData[]>([]);
+    const [isLoadingWip, setIsLoadingWip] = useState(true);
+    const [wipError, setWipError] = useState<string | null>(null);
 
-// --- Main Page Component ---
-function TraduccionesPage() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const initialTag = searchParams.get('tag');
-
-    useEffect(() => { document.title = "Traducciones | Shiro Nexus"; }, []);
-
-    // --- State ---
-    const [allTranslations, setAllTranslations] = useState<TranslationItemData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedTags, setSelectedTags] = useState<string[]>(initialTag ? [initialTag] : []);
-    const [sortBy, setSortBy] = useState<SortOption>('newest');
-
-     // --- Data Loading ---
-     useEffect(() => {
-        setIsLoading(true);
-        setError(null);
-        console.log("Attempting to load translations...");
-
+    // --- Load WIP items from the new collection ---
+    useEffect(() => {
+        setIsLoadingWip(true);
+        setWipError(null);
         try {
-            const modules = import.meta.glob('/content/traducciones/**/*.md', {
+            // Use import.meta.glob to load files from the new 'wip' content folder
+            const modules = import.meta.glob('/content/wip/*.md', { // Path to the new folder
                 eager: true,
                 query: '?raw',
                 import: 'default'
             });
-            console.log("Archivos encontrados por import.meta.glob:", modules);
 
-            const loadedTranslations: TranslationItemData[] = [];
-            if (Object.keys(modules).length === 0) { console.warn("No translation files found..."); }
-
+            const loadedItems: WipItemData[] = [];
             for (const path in modules) {
                 const rawContent = modules[path];
-                 if (typeof rawContent !== 'string') {
-                    console.warn(`Contenido no es string para: ${path}`);
-                    continue;
-                 }
+                if (typeof rawContent !== 'string') continue;
                 try {
                     const { data: frontmatter } = matter(rawContent);
-
                     const slugMatch = path.match(/([^/]+)\.md$/);
-                    const filename = slugMatch ? slugMatch[1] : path;
-                    const slug = filename.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+                    const id = slugMatch ? slugMatch[1] : path; // Use filename slug as ID
 
-                    // --- MODIFIED: Determine display values and generate combined tags ---
-                    const displayFormat = getDisplayValue(frontmatter.format_select, frontmatter.format_other);
-                    const displaySpecification = getDisplayValue(frontmatter.specification_select, frontmatter.specification_other);
-                    const displaySource = getDisplayValue(frontmatter.source_select, frontmatter.source_other);
-
-                    // Combined tags for filtering purposes
-                    const tags = [
-                        frontmatter.status,
-                        frontmatter.mainCategory,
-                        displayFormat, // Add the calculated format
-                        displaySpecification, // Add the calculated specification
-                        ...(Array.isArray(frontmatter.tags) ? frontmatter.tags : []) // Add extra tags
-                    ].filter(Boolean) as string[];
-                    // --- END MODIFICATION ---
-
-                    const translationItem: TranslationItemData = {
-                        id: filename,
-                        slug: slug,
-                        filename: filename,
-                        title: frontmatter.title ?? `Sin Título (${filename})`,
-                        date: frontmatter.date ? new Date(frontmatter.date).toISOString() : new Date().toISOString(),
-                        imageUrl: frontmatter.imageUrl,
-                        tags: tags, // Use the combined tags array
-                        status: frontmatter.status, // Keep original status if needed elsewhere
-                        mainCategory: frontmatter.mainCategory, // Keep original category if needed
-                        format: displayFormat, // Store final format value
-                        specification: displaySpecification, // Store final specification value
-                        source: displaySource, // Store final source value
-                        excerpt: frontmatter.excerpt,
-                        link: `/traducciones/${filename}`,
-                    };
-                    loadedTranslations.push(translationItem);
-                } catch (parseError) { console.error(`Error parsing frontmatter for file: ${path}`, parseError); }
+                    loadedItems.push({
+                        id: id,
+                        title: frontmatter.title,
+                        image: frontmatter.image, // Use 'image' field from CMS
+                        wip_status: frontmatter.wip_status, // Use 'wip_status' field
+                        progress: frontmatter.progress,
+                        link: frontmatter.link,
+                        order: frontmatter.order,
+                        date: frontmatter.date // Load date if needed for sorting
+                    });
+                } catch (parseError) {
+                    console.error(`Error parsing WIP item: ${path}`, parseError);
+                }
             }
-            console.log("Loaded translations:", loadedTranslations);
-            setAllTranslations(loadedTranslations);
-        } catch (err) { console.error("Error loading translation files:", err); setError("Error al cargar las traducciones.");
-        } finally { setIsLoading(false); }
-    }, []);
 
+            // Sort items: primarily by 'order' field (ascending), then maybe by date or title
+            loadedItems.sort((a, b) => {
+                if (a.order !== undefined && b.order !== undefined) {
+                    return a.order - b.order; // Sort by order field if both have it
+                }
+                if (a.order !== undefined) return -1; // Items with order come first
+                if (b.order !== undefined) return 1;  // Items with order come first
+                // Fallback sort (e.g., by title or date if needed)
+                return a.title?.localeCompare(b.title ?? '') ?? 0;
+            });
 
-    // Update selectedTags if URL parameter changes
-    useEffect(() => { const tagFromURL = searchParams.get('tag'); if (tagFromURL && !selectedTags.includes(tagFromURL)) { setSelectedTags([tagFromURL]); } }, [searchParams, selectedTags]);
+            setWipItems(loadedItems);
 
-    // --- Available Tags for Filtering ---
-    const mainCategoryTags = ["Anime", "Donghua", "Otros"];
-    // --- MODIFIED: Updated formatTags ---
-    const formatTags = ["TV", "OVA", "Especial", "Película"]; // Removed "Otro" as it's handled by getDisplayValue
-    // --- NEW: Added specificationTags ---
-    const specificationTags = ["MKV", "MP4", "AVI"]; // Removed "Otro"
-    const statusTags = ["En Progreso", "Finalizado", "Pausado", "Cancelado"];
-
-    // --- Filtering and Sorting Logic (Remains the same, filters based on combined `tags` array) ---
-    const filteredData = useMemo(() => {
-        let filtered = allTranslations;
-        if (searchTerm) {
-            filtered = filtered.filter(item =>
-                item.title.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+        } catch (err) {
+            console.error("Error loading WIP items:", err);
+            setWipError("Error al cargar tareas en progreso.");
+        } finally {
+            setIsLoadingWip(false);
         }
-        if (selectedTags.length > 0) {
-            // Check if *all* selected tags are present in the item's combined tags array
-            filtered = filtered.filter(item =>
-                item.tags && selectedTags.every(tag => item.tags?.includes(tag))
-            );
+    }, []); // Load once on mount
+
+
+    // Determine the status text color based on the wip_status value
+    const getStatusColor = (status?: string): string => {
+        // Use the wip_status values defined in config.yml
+        switch (status?.toLowerCase()) {
+            case 'traduciendo': return 'text-yellow-400';
+            case 'editando': return 'text-blue-400';
+            case 'corrigiendo': return 'text-orange-400';
+            case 'q.c.': return 'text-purple-400'; // Example color for QC
+            case 'encoding': return 'text-indigo-400';
+            case 'subiendo': return 'text-pink-400';
+            case 'otro': return 'text-gray-400';
+            default: return 'text-gray-400';
         }
-        return filtered;
-       }, [searchTerm, selectedTags, allTranslations]);
-
-    // --- Grouping and Sorting Logic (Remains the same) ---
-    const { inProgressItems, finishedItems, pausedItems, cancelledItems } = useMemo(() => {
-        // ... (grouping and sorting logic is unchanged) ...
-        const progress: TranslationItemData[] = []; const finished: TranslationItemData[] = []; const paused: TranslationItemData[] = []; const cancelled: TranslationItemData[] = [];
-        filteredData.forEach(item => { if (item.tags?.includes("En Progreso")) progress.push(item); else if (item.tags?.includes("Pausado")) paused.push(item); else if (item.tags?.includes("Cancelado")) cancelled.push(item); else finished.push(item); });
-        const sortArray = (arr: TranslationItemData[]) => { switch (sortBy) { case 'oldest': return [...arr].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); case 'title-asc': return [...arr].sort((a, b) => a.title.localeCompare(b.title)); case 'title-desc': return [...arr].sort((a, b) => b.title.localeCompare(a.title)); case 'newest': default: return [...arr].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); } };
-        return { inProgressItems: sortArray(progress), finishedItems: sortArray(finished), pausedItems: sortArray(paused), cancelledItems: sortArray(cancelled) };
-       }, [filteredData, sortBy]);
-
-
-    // --- Event Handlers ---
-    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => { setSearchTerm(event.target.value); };
-    const handleTagClick = (tag: string) => { setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]); };
-    const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => { setSortBy(event.target.value as SortOption); };
-
-    // --- Animation Variants ---
-    const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.1 } } };
-    const itemVariants = { hidden: { opacity: 0, y: 20, scale: 0.98 }, visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } };
-
-    // Simple Spinner Component - Use Cyan
-    const LoadingSpinner = () => ( <div className="flex justify-center items-center py-20"> <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-t-cyan-500 border-r-cyan-500/30 border-b-cyan-500/30 border-l-cyan-500/30 rounded-full" ></motion.div> </div> );
-
-    // Helper function to render tag groups in filters - Use Cyan
-    const renderFilterTagGroup = (title: string, tags: string[], colorClassActive: string | ((tag: string) => string)) => (
-        <fieldset className="mt-4 pt-4 border-t border-gray-700/60 first:mt-0 first:pt-0 first:border-none">
-            <legend className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider px-1">{title}</legend>
-            <div className="flex flex-wrap gap-2">
-                {tags.map(tag => {
-                    const isActive = selectedTags.includes(tag);
-                    let activeClass = '';
-                    if (isActive) { activeClass = typeof colorClassActive === 'function' ? colorClassActive(tag) : colorClassActive; }
-                    // Added min-w-[4rem] text-center for better button consistency
-                    return ( <button key={tag} onClick={() => handleTagClick(tag)} className={`px-3 py-1 text-xs rounded-full border transition-all duration-200 min-w-[4rem] text-center ${ isActive ? `${activeClass} text-white border-transparent shadow-md scale-105` : 'bg-gray-700/70 text-gray-300 border-gray-600 hover:bg-gray-600/80 hover:border-gray-500 hover:text-white' }`} > {tag} </button> );
-                })}
-            </div>
-        </fieldset>
-       );
-
-    // Helper function to render a section grid - Use Cyan
-    const renderSectionGrid = (title: string, items: TranslationItemData[], icon: React.ReactNode, borderColor: string) => (
-        // ... (renderSectionGrid logic is unchanged) ...
-        items.length > 0 && ( <motion.section variants={itemVariants} className="mb-16"> <div className={`flex items-center mb-6 border-l-4 ${borderColor} pl-3 py-1`}> <span className="flex-shrink-0 w-6 h-6">{icon}</span> <h2 className="ml-2 text-2xl font-bold text-white tracking-tight"> {title} <span className="text-lg font-medium text-gray-400">({items.length})</span> </h2> </div> <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" variants={containerVariants} initial="hidden" animate="visible"> {items.map(item => ( <motion.div key={item.id} variants={itemVariants}> <TranslationItemCard item={item} /> </motion.div> ))} </motion.div> </motion.section> )
-    );
+    };
 
     return (
-        <>
-            <motion.div
-                className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
-                initial="hidden" animate="visible" variants={containerVariants}
-            >
-                {/* Page Title & Description - Use Cyan */}
-                <motion.h1 variants={itemVariants} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 text-cyan-400">Traducciones</motion.h1>
-                <motion.p variants={itemVariants} className="text-center text-gray-400 mb-12 md:mb-16 max-w-2xl mx-auto"> Explora nuestras últimas traducciones y filtra según tus preferencias.</motion.p>
-
-                {/* --- Main content area with Sidebar --- */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8 xl:gap-12">
-
-                    {/* --- Main Content Column (Filters + Sections) --- */}
-                    <div className="lg:col-span-2">
-                        {/* --- Filters, Search, Sort Section --- */}
-                        <motion.div variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-xl backdrop-blur-sm">
-                            {/* Search and Sort */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 items-end mb-6">
-                                {/* ... Search Input ... */}
-                                <div> <label htmlFor="search-traducciones" className="block text-sm font-medium text-gray-300 mb-1.5">Buscar por Título</label> <div className="relative"> <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span> <input type="search" id="search-traducciones" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} className="w-full pl-10 pr-4 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors"/> </div> </div>
-                                {/* ... Sort Select ... */}
-                                <div> <label htmlFor="sort-traducciones" className="block text-sm font-medium text-gray-300 mb-1.5">Ordenar por</label> <select id="sort-traducciones" value={sortBy} onChange={handleSortChange} className="w-full px-4 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25em 1.25em'}}> <option value="newest">Más Recientes</option><option value="oldest">Más Antiguos</option><option value="title-asc">Título (A-Z)</option><option value="title-desc">Título (Z-A)</option> </select> </div>
-                            </div>
-                            {/* Filter Tags */}
-                            <div className="space-y-4">
-                                {renderFilterTagGroup("Categoría Principal", mainCategoryTags, "bg-blue-600")}
-                                {/* --- MODIFIED: Use updated formatTags --- */}
-                                {renderFilterTagGroup("Formato", formatTags, "bg-purple-600")}
-                                {/* --- NEW: Render specificationTags --- */}
-                                {renderFilterTagGroup("Especificaciones", specificationTags, "bg-indigo-600")} {/* Added new group */}
-                                {renderFilterTagGroup("Estado", statusTags, (tag) => { if (tag === 'En Progreso') return 'bg-yellow-500 text-black'; if (tag === 'Finalizado') return 'bg-cyan-600'; if (tag === 'Pausado') return 'bg-orange-500'; if (tag === 'Cancelado') return 'bg-red-600'; return 'bg-gray-600'; })}
-                                {selectedTags.length > 0 && ( <div className="pt-3 text-right border-t border-gray-700/50 mt-4"> <button onClick={() => { setSelectedTags([]); }} className="px-3 py-1 text-xs rounded-full border border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors" > Limpiar Filtros </button> </div> )}
-                            </div>
-                        </motion.div>
-
-                        {/* Anchor for scrolling */}
-                        <div id="translation-list-start" className="pt-4"></div>
-
-                        {/* --- Loading State or Display Sections --- */}
-                        {/* ... Loading, Error, Empty states remain the same ... */}
-                         {isLoading ? ( <LoadingSpinner /> ) : error ? ( <motion.div variants={itemVariants} className="text-center text-red-400 py-16 px-6 bg-red-900/20 rounded-lg border border-dashed border-red-700/50 flex flex-col items-center mt-8"> <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> <h3 className="mt-2 text-xl font-semibold text-red-300">Error al Cargar</h3> <p className="mt-1 text-sm max-w-sm">{error}</p> </motion.div> ) : filteredData.length === 0 ? ( <motion.div variants={itemVariants} className="text-center text-gray-500 py-16 px-6 bg-gray-800/30 rounded-lg border border-dashed border-gray-700 flex flex-col items-center mt-8"> <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 14l2-2m0 0l2-2m-2 2l-2 2m2-2l2 2" /></svg> <h3 className="mt-2 text-xl font-semibold text-gray-300">Sin Resultados</h3> <p className="mt-1 text-sm max-w-sm">No se encontraron traducciones que coincidan con tu búsqueda o filtros.</p> <button onClick={() => { setSearchTerm(''); setSelectedTags([]); }} className="mt-6 px-4 py-2 text-sm font-medium rounded-md border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors" > Mostrar Todo </button> </motion.div> ) : (
-                            <motion.div variants={containerVariants} initial="hidden" animate="visible">
-                                {renderSectionGrid("En Progreso", inProgressItems, <svg className="h-6 w-6 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, "border-yellow-500")}
-                                {renderSectionGrid("Pausado", pausedItems, <svg className="h-6 w-6 text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, "border-orange-500")}
-                                {renderSectionGrid("Finalizado", finishedItems, <svg className="h-6 w-6 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, "border-cyan-500")}
-                                {renderSectionGrid("Cancelado", cancelledItems, <svg className="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>, "border-red-700")}
-                            </motion.div>
-                        )}
-                    </div> {/* End Main Content Column */}
-
-                    {/* --- Sidebar Column --- */}
-                    <div className="lg:col-span-1 mt-12 lg:mt-0">
-                        <Sidebar />
-                    </div>
-
-                </div> {/* End Grid Layout */}
+        <motion.aside className="space-y-8 lg:sticky lg:top-24" variants={sidebarVariants} initial="hidden" animate="visible" >
+            {/* Support Section */}
+            <motion.div variants={widgetVariants} className="bg-gradient-to-br from-gray-800 to-gray-800/70 rounded-xl p-6 border border-gray-700/50 shadow-lg">
+                {/* ... Support content ... */}
+                 <h3 className="text-xl font-semibold mb-4 text-white border-b border-gray-600 pb-2">Apoya Shiro Nexus</h3>
+                 <p className="text-sm text-gray-300 mb-5"> Si te gusta nuestro trabajo, considera apoyarnos para mantener el sitio y traer más contenido. ¡Cada aporte cuenta! </p>
+                 <div className="space-y-3"> <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-medium transition-colors shadow hover:shadow-md"> <KofiIcon /> Invítame un café en Ko-fi </a> <a href="#" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors shadow hover:shadow-md"> <PatreonIcon /> Conviértete en mecenas </a> </div>
             </motion.div>
 
-            <ScrollToTopButton />
-        </>
+            {/* --- "Trabajando Actualmente" Widget - Reads from state --- */}
+            <motion.div variants={widgetVariants} className="bg-gray-800/70 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
+                 <h3 className="text-xl font-semibold text-white border-b border-gray-600 px-6 py-4">Trabajando Actualmente</h3>
+                 {isLoadingWip ? (
+                     <div className="p-6 text-center text-gray-400">Cargando...</div>
+                 ) : wipError ? (
+                     <div className="p-6 text-center text-red-400">{wipError}</div>
+                 ) : wipItems && wipItems.length > 0 ? (
+                     <ul className="divide-y divide-gray-700/50">
+                         {/* Use local wipItems state */}
+                         {wipItems.map(item => (
+                             <li key={item.id} className="group">
+                                 {/* Use item.link if available, otherwise don't link */}
+                                 {item.link ? (
+                                     <Link to={item.link} className="block hover:bg-gray-700/40 transition-colors duration-150">
+                                         {/* Render item content */}
+                                         <WipItemContent item={item} getStatusColor={getStatusColor} />
+                                     </Link>
+                                 ) : (
+                                     <div className="block"> {/* No hover effect if no link */}
+                                         {/* Render item content */}
+                                         <WipItemContent item={item} getStatusColor={getStatusColor} />
+                                     </div>
+                                 )}
+                             </li>
+                         ))}
+                     </ul>
+                 ) : (
+                     // Message when no items are loaded or found
+                     <div className="p-6 text-center">
+                         <p className="text-sm text-gray-400 italic">¡Al día! No hay tareas activas.</p>
+                     </div>
+                 )}
+            </motion.div>
+
+        </motion.aside>
     );
 }
 
-export default TraduccionesPage;
+// --- Helper component to render the content of a WIP item ---
+// This avoids duplicating the rendering logic for linked/unlinked items
+const WipItemContent: React.FC<{item: WipItemData, getStatusColor: (status?: string) => string}> = ({ item, getStatusColor }) => (
+    <div className="flex flex-col">
+        {/* Image */}
+        {item.image ? (
+            <img
+                src={item.image} // Use 'image' field
+                alt="" // Decorative
+                className="w-full h-32 object-cover"
+                loading="lazy"
+                onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }}
+            />
+        ) : (
+            <div className="w-full h-32 bg-gray-700 flex items-center justify-center">
+                <span className="text-gray-500 text-xs italic">Sin imagen</span>
+            </div>
+        )}
+        {/* Text Content */}
+        <div className="p-4">
+            <p className="text-sm font-semibold text-gray-100 group-hover:text-cyan-300 transition-colors mb-1 truncate" title={item.title}>
+                {item.title || "Sin Título"}
+            </p>
+            {/* Progress bar */}
+            {typeof item.progress === 'number' && item.progress >= 0 && (
+               <div className="w-full bg-gray-600 rounded-full h-1.5 my-1.5 overflow-hidden">
+                   <div
+                       className="bg-cyan-500 h-1.5 rounded-full transition-all duration-500 ease-out"
+                       style={{ width: `${item.progress}%` }}
+                   ></div>
+               </div>
+            )}
+            {/* Status Text */}
+            {item.wip_status && ( // Use wip_status field
+               <p className={`text-xs font-medium ${getStatusColor(item.wip_status)}`}>
+                   {item.wip_status} {typeof item.progress === 'number' ? `(${item.progress}%)` : ''}
+               </p>
+            )}
+        </div>
+    </div>
+);
+
+
+export default Sidebar;
