@@ -3,10 +3,6 @@ backend:
   name: github # Usamos GitHub
   repo: Pqblo26/shirov2-awards # Reemplaza con tu usuario/repositorio si es diferente
   branch: main # La rama donde se guardarán los cambios
-  # Para despliegues en Vercel/Netlify con autenticación Git Gateway/Identity,
-  # podrías necesitar configurar 'base_url' y 'auth_endpoint' más adelante.
-  # Por ahora, para probar localmente o con auth de GitHub, esto es suficiente.
-  # Ver docs de Decap CMS y Vercel para detalles de autenticación en producción.
   # commit_messages: # Opcional: Personaliza mensajes de commit
   #   create: 'Create {{collection}} “{{slug}}”'
   #   update: 'Update {{collection}} “{{slug}}”'
@@ -15,7 +11,6 @@ backend:
   #   deleteMedia: 'Delete “{{path}}”'
 
 # Configuración de Media (Imágenes, etc.)
-# Guarda imágenes en /public/images/uploads, accesibles desde /images/uploads
 media_folder: "public/images/uploads" # Ruta relativa a la raíz del proyecto donde se guardan las imágenes
 public_folder: "/images/uploads" # Ruta pública para acceder a las imágenes en la web
 
@@ -33,41 +28,69 @@ collections:
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Fecha de Publicación", name: "date", widget: "datetime" }
       - { label: "Imagen Destacada", name: "imageUrl", widget: "image", required: false }
-      - { label: "Tags", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false } # Lista simple de tags de texto
-      # Widget 'select' para el estado, con las opciones definidas
+      - { label: "Tags", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false }
       - label: "Estado"
         name: "status"
         widget: "select"
         options: ["En Progreso", "Finalizado", "Pausado", "Cancelado"]
         default: "En Progreso"
-        required: false # Hacer opcional si no siempre aplica
-      # Widget 'select' para la categoría principal
-      - label: "Categoría Principal"
+        required: false
+      - label: "Categoría Principal" # Se mantiene por si se usa en otro sitio
         name: "mainCategory"
         widget: "select"
-        options: ["Anime", "Donghua", "Otros"] # Añade más si es necesario
+        options: ["Anime", "Donghua", "Otros"]
         required: false
-      # Widget 'select' para el formato
-      - label: "Formato"
+      # --- Campo 'format' MODIFICADO ---
+      # Cambiado de 'select' a 'string' para texto libre (ej: MKV Softsubs)
+      - label: "Formato (Release)" # Etiqueta actualizada para claridad
         name: "format"
-        widget: "select"
-        options: ["TV", "BD", "OVA", "Especial"] # Añade más si es necesario
+        widget: "string" # Cambiado a string
         required: false
-      - { label: "Fuente Original", name: "source", widget: "string", required: false }
-      - { label: "Extracto Corto", name: "excerpt", widget: "text", required: false }
+        hint: "Ej: MKV Softsubs, MP4 Hardsubs, BDrip" # Añadido hint
+      - { label: "Fuente Original / Grupo", name: "source", widget: "string", required: false, hint: "Nombre del grupo o fuente original si aplica" } # Añadido hint
+      - { label: "Sinopsis / Extracto Corto", name: "excerpt", widget: "text", required: false }
+
+      # --- NUEVOS CAMPOS TÉCNICOS ---
+      - label: "Resolución"
+        name: "resolution"
+        widget: "string"
+        required: false
+        hint: "Ej: 1920x1080, 1280x720"
+      - label: "Codec de Video"
+        name: "videoCodec"
+        widget: "string"
+        required: false
+        hint: "Ej: H.265/HEVC, H.264/AVC"
+      - label: "Codec de Audio"
+        name: "audioCodec"
+        widget: "string"
+        required: false
+        hint: "Ej: AAC (Japonés), FLAC"
+      - label: "Recursos Externos"
+        name: "externalResources"
+        widget: "string"
+        required: false
+        hint: "Enlace a web oficial, MyAnimeList, etc. o N/A"
+
+      # --- NUEVO CAMPO LISTA PARA DESCARGAS ---
+      - label: "Enlaces de Descarga"
+        name: "downloads"
+        widget: "list"
+        label_singular: "Enlace de Descarga"
+        summary: "{{fields.quality}} [{{fields.format}}] - {{fields.server}}" # Resumen visible en la lista
+        required: false
+        fields: # Campos para cada objeto dentro de la lista 'downloads'
+          - { label: "Calidad", name: "quality", widget: "string", required: false, hint: "Ej: 1080p, 720p, BD" }
+          - { label: "Formato (Archivo)", name: "format", widget: "string", required: false, hint: "Ej: MKV, MP4" }
+          - { label: "Servidor", name: "server", widget: "string", required: false, hint: "Ej: Mega, Drive, Torrent" }
+          - { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" } # URL es el único campo requerido dentro de un enlace
+          - { label: "Notas Adicionales", name: "notes", widget: "string", required: false, hint: "Ej: v2, Parche, Incluye extras" }
+
       # Contenido principal de la traducción usando Markdown
-      - { label: "Contenido Principal", name: "body", widget: "markdown" }
+      # Aunque no se muestra en SingleTranslationPage v6/v7, se mantiene aquí por si se usa en otro lugar o futuro.
+      - { label: "Contenido Principal (Markdown)", name: "body", widget: "markdown", required: false }
 
   # --- Aquí añadirías otras colecciones en el futuro ---
-  # Ejemplo: Colección para Premios
   # - name: "premios"
   #   label: "Premios"
-  #   folder: "content/premios"
-  #   create: true
-  #   fields:
-  #     - { label: "Año", name: "year", widget: "number" }
-  #     - { label: "Categoría", name: "category", widget: "string" }
-  #     - { label: "Ganador", name: "winner", widget: "string" }
-  #     - { label: "Imagen", name: "image", widget: "image", required: false }
-  #     - { label: "Color Tema", name: "color", widget: "string", required: false } # Podría ser un select
-  #     - { label: "Detalles", name: "details", widget: "markdown", required: false }
+  #   ...etc...

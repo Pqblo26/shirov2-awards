@@ -1,33 +1,28 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, Link } from 'react-router-dom';
-import TranslationItemCard from '../components/TranslationItemCard'; // Use v8 link version
-import Sidebar from '../components/Sidebar'; // Use v9 version
-// ScrollToTopButton might be needed here too if MainLayout doesn't handle it globally
-// import ScrollToTopButton from '../components/ScrollToTopButton';
+import TranslationItemCard from '../components/TranslationItemCard'; // Use updated card v9
+import Sidebar from '../components/Sidebar'; // Use updated sidebar v10
+import matter from 'gray-matter';
+// Removed react-markdown/remark-gfm imports as they are not used here
 
-// --- Sample Data ---
-// Added 'slug' and 'content' fields
-const allTranslationsData = [
-    { id: "t-main-1", slug: "manga-xyz-10", title: "Avance Capítulo 10 - Manga XYZ", link: "/traducciones/manga-xyz-10", imageUrl: "https://picsum.photos/seed/mangaXYZ10/300/400", tags: ["Otros", "En Progreso"], date: "2025-04-05", content: "<p>Contenido simulado para Manga XYZ Cap 10...</p>" },
-    { id: "t-main-2", slug: "entrevista-abc", title: "Entrevista Exclusiva - Autor ABC", link: "/traducciones/entrevista-abc", imageUrl: "https://picsum.photos/seed/autorABC/300/400", tags: ["Otros", "Finalizado"], date: "2025-04-03", content: "<p>Contenido simulado para Entrevista ABC...</p>" },
-    { id: "t-main-3", slug: "noticia-evento", title: "Noticia Importante - Evento Anime", link: "/traducciones/noticia-evento", imageUrl: "https://picsum.photos/seed/eventoAnime/300/400", tags: ["Otros", "Finalizado"], date: "2025-04-01", content: "<p>Contenido simulado para Noticia Evento...</p>" },
-    { id: "t-main-4", slug: "analisis-zzz", title: "Análisis Episodio Final - Anime ZZZ (TV)", link: "/traducciones/analisis-zzz", imageUrl: "https://picsum.photos/seed/animeZZZfinal/300/400", tags: ["Otros", "Anime", "TV", "Finalizado"], date: "2025-03-30", content: "<p>Contenido simulado para Análisis ZZZ...</p>" },
-    { id: "t-main-5", slug: "guia-aaa", title: "Guía de Personajes - Juego AAA", link: "/traducciones/guia-aaa", imageUrl: "https://picsum.photos/seed/juegoAAA/300/400", tags: ["Otros", "En Progreso"], date: "2025-03-25", content: "<p>Contenido simulado para Guía AAA...</p>" },
-    { id: "t-main-6", slug: "donghua-xyz-5", title: "Donghua XYZ - Episodio 5 (BD)", link: "/traducciones/donghua-xyz-5", imageUrl: "https://picsum.photos/seed/donghuaXYZ5/300/400", tags: ["Donghua", "BD", "En Progreso"], date: "2025-03-28", content: "<p>Contenido simulado para Donghua XYZ 5...</p>" },
-    { id: "t-main-7", slug: "ova-abc", title: "OVA Especial - Anime ABC", link: "/traducciones/ova-abc", imageUrl: "https://picsum.photos/seed/animeABCova/300/400", tags: ["Anime", "OVA", "Especial", "Finalizado"], date: "2025-03-15", content: "<p>Contenido simulado para OVA ABC...</p>" },
-    { id: "t-main-8", slug: "nl-vol3", title: "Resumen Novela Ligera Vol. 3", link: "/traducciones/nl-vol3", imageUrl: "https://picsum.photos/seed/novelaLigera3/300/400", tags: ["Otros", "Finalizado"], date: "2025-03-10", content: "<p>Contenido simulado para Novela Ligera Vol 3...</p>" },
-    { id: "t-main-9", slug: "manga-xyz-9", title: "Manga XYZ - Capítulo 9", link: "/traducciones/manga-xyz-9", imageUrl: "https://picsum.photos/seed/mangaXYZ9/300/400", tags: ["Otros", "En Progreso"], date: "2025-03-29", content: "<p>Contenido simulado para Manga XYZ Cap 9...</p>" },
-    { id: "t-main-10", slug: "anime-zzz-11", title: "Anime ZZZ - Episodio 11 (TV)", link: "/traducciones/anime-zzz-11", imageUrl: "https://picsum.photos/seed/animeZZZ11/300/400", tags: ["Anime", "TV", "En Progreso"], date: "2025-03-23", content: "<p>Contenido simulado para Anime ZZZ Ep 11...</p>" },
-    { id: "t-main-11", slug: "webcomic-y", title: "Web Comic Corto - Autor Y", link: "/traducciones/webcomic-y", imageUrl: "https://picsum.photos/seed/webcomicY/300/400", tags: ["Otros", "Finalizado"], date: "2025-03-05", content: "<p>Contenido simulado para Web Comic Y...</p>" },
-    { id: "t-main-12", slug: "donghua-xyz-4", title: "Donghua XYZ - Episodio 4 (BD)", link: "/traducciones/donghua-xyz-4", imageUrl: "https://picsum.photos/seed/donghuaXYZ4/300/400", tags: ["Donghua", "BD", "En Progreso"], date: "2025-03-21", content: "<p>Contenido simulado para Donghua XYZ 4...</p>" },
-    { id: "t-main-13", slug: "peli-pausada", title: "Anime Pelicula - Proyecto Pausado", link: "/traducciones/peli-pausada", imageUrl: "https://picsum.photos/seed/peliPausada/300/400", tags: ["Anime", "Pausado"], date: "2025-02-20", content: "<p>Contenido simulado para Pelicula Pausada...</p>" },
-    { id: "t-main-14", slug: "manga-abc-cancel", title: "Manga ABC - Cancelado", link: "/traducciones/manga-abc-cancel", imageUrl: "https://picsum.photos/seed/mangaABCcancel/300/400", tags: ["Otros", "Cancelado"], date: "2025-01-15", content: "<p>Contenido simulado para Manga ABC Cancelado...</p>" },
-    { id: "t-main-15", slug: "donghua-qrs-pausa", title: "Donghua QRS - Pausado Indefinidamente", link: "/traducciones/donghua-qrs-pausa", imageUrl: "https://picsum.photos/seed/donghuaQRSpausa/300/400", tags: ["Donghua", "TV", "Pausado"], date: "2025-02-01", content: "<p>Contenido simulado para Donghua QRS Pausado...</p>" },
-];
+// Define structure for parsed data
+interface TranslationItemData {
+    id: string; // Using filename (without .md) as ID
+    slug: string; // Generated slug (without date)
+    filename: string; // Full filename without extension (ADDED)
+    title: string;
+    link: string; // Will be generated using filename
+    imageUrl?: string;
+    tags?: string[];
+    date: string;
+    status?: string;
+    mainCategory?: string;
+    format?: string;
+    source?: string;
+    excerpt?: string;
+}
 
-// Define types for data and state
-type TranslationItemData = typeof allTranslationsData[0];
 type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
 
 // --- Main Page Component ---
@@ -38,14 +33,62 @@ function TraduccionesPage() {
     useEffect(() => { document.title = "Traducciones | Shiro Nexus"; }, []);
 
     // --- State ---
-    const [isLoading, setIsLoading] = useState(true); // Keep loading state
+    const [allTranslations, setAllTranslations] = useState<TranslationItemData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>(initialTag ? [initialTag] : []);
     const [sortBy, setSortBy] = useState<SortOption>('newest');
-    // Removed pagination state
 
      // Simulate loading data
-     useEffect(() => { const timer = setTimeout(() => { setIsLoading(false); }, 500); return () => clearTimeout(timer); }, []);
+     useEffect(() => {
+        setIsLoading(true);
+        setError(null);
+        console.log("Attempting to load translations...");
+
+        try {
+            const modules = import.meta.glob('/content/traducciones/**/*.md', { eager: true, as: 'raw' });
+            console.log("Archivos encontrados por import.meta.glob:", modules);
+
+            const loadedTranslations: TranslationItemData[] = [];
+            if (Object.keys(modules).length === 0) { console.warn("No translation files found..."); }
+
+            for (const path in modules) {
+                const rawContent = modules[path];
+                 if (typeof rawContent !== 'string') { continue; }
+                try {
+                    const { data: frontmatter } = matter(rawContent);
+
+                    const slugMatch = path.match(/([^/]+)\.md$/);
+                    const filename = slugMatch ? slugMatch[1] : path; // Filename without extension
+                    const slug = filename.replace(/^\d{4}-\d{2}-\d{2}-/, ''); // Slug without date prefix
+
+                    const tags = [ frontmatter.status, frontmatter.mainCategory, frontmatter.format, ...(Array.isArray(frontmatter.tags) ? frontmatter.tags : []) ].filter(Boolean) as string[];
+
+                    const translationItem: TranslationItemData = {
+                        id: filename, // Use filename as ID
+                        slug: slug,
+                        filename: filename, // Store filename explicitly (ADDED)
+                        title: frontmatter.title ?? `Sin Título (${filename})`,
+                        date: frontmatter.date ? new Date(frontmatter.date).toISOString() : new Date().toISOString(),
+                        imageUrl: frontmatter.imageUrl,
+                        tags: tags,
+                        status: frontmatter.status,
+                        mainCategory: frontmatter.mainCategory,
+                        format: frontmatter.format,
+                        source: frontmatter.source,
+                        excerpt: frontmatter.excerpt,
+                        link: `/traducciones/${filename}`, // Use filename in link (CHANGED)
+                    };
+                    loadedTranslations.push(translationItem);
+                } catch (parseError) { console.error(`Error parsing frontmatter for file: ${path}`, parseError); }
+            }
+            console.log("Loaded translations:", loadedTranslations);
+            setAllTranslations(loadedTranslations);
+        } catch (err) { console.error("Error loading translation files:", err); setError("Error al cargar las traducciones.");
+        } finally { setIsLoading(false); }
+    }, []);
+
 
     // Update selectedTags if URL parameter changes
     useEffect(() => { const tagFromURL = searchParams.get('tag'); if (tagFromURL && !selectedTags.includes(tagFromURL)) { setSelectedTags([tagFromURL]); } }, [searchParams, selectedTags]);
@@ -57,16 +100,16 @@ function TraduccionesPage() {
 
     // --- Filtering and Sorting Logic ---
     const filteredData = useMemo(() => { /* ... */
-        let filtered = allTranslationsData;
+        let filtered = allTranslations;
         if (searchTerm) { filtered = filtered.filter(item => item.title.toLowerCase().includes(searchTerm.toLowerCase())); }
-        if (selectedTags.length > 0) { filtered = filtered.filter(item => selectedTags.every(tag => item.tags.includes(tag))); }
+        if (selectedTags.length > 0) { filtered = filtered.filter(item => selectedTags.every(tag => item.tags?.includes(tag))); }
         return filtered;
-     }, [searchTerm, selectedTags]);
+     }, [searchTerm, selectedTags, allTranslations]);
 
     // --- Split and Sort Logic ---
     const { inProgressItems, finishedItems, pausedItems, cancelledItems } = useMemo(() => { /* ... */
         const progress: TranslationItemData[] = []; const finished: TranslationItemData[] = []; const paused: TranslationItemData[] = []; const cancelled: TranslationItemData[] = [];
-        filteredData.forEach(item => { if (item.tags.includes("En Progreso")) progress.push(item); else if (item.tags.includes("Pausado")) paused.push(item); else if (item.tags.includes("Cancelado")) cancelled.push(item); else finished.push(item); });
+        filteredData.forEach(item => { if (item.tags?.includes("En Progreso")) progress.push(item); else if (item.tags?.includes("Pausado")) paused.push(item); else if (item.tags?.includes("Cancelado")) cancelled.push(item); else finished.push(item); });
         const sortArray = (arr: TranslationItemData[]) => {
             switch (sortBy) {
                 case 'oldest': return [...arr].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -122,7 +165,7 @@ function TraduccionesPage() {
     );
 
     return (
-        <> {/* Changed to Fragment */}
+        <>
             <motion.div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" initial="hidden" animate="visible" variants={containerVariants} >
                 {/* Page Title & Description */}
                 <motion.h1 variants={itemVariants} className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-4 text-green-400">Traducciones</motion.h1>
@@ -135,21 +178,15 @@ function TraduccionesPage() {
                     <div className="lg:col-span-2">
                         {/* --- Filters, Search, Sort Section --- */}
                         <motion.div variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/80 rounded-xl border border-gray-700/50 shadow-xl backdrop-blur-sm">
-                            {/* Search and Sort Row */}
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 items-end mb-6">
-                                {/* Search Input */}
-                                <div> <label htmlFor="search-traducciones" className="block text-sm font-medium text-gray-300 mb-1.5">Buscar por Título</label> <div className="relative"> <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"> <svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg> </span> <input type="search" id="search-traducciones" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} className="w-full pl-10 pr-4 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors" /> </div> </div>
-                                {/* Sort Select */}
-                                <div> <label htmlFor="sort-traducciones" className="block text-sm font-medium text-gray-300 mb-1.5">Ordenar por</label> <select id="sort-traducciones" value={sortBy} onChange={handleSortChange} className="w-full px-4 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-8" style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25em 1.25em' }} > <option value="newest">Más Recientes</option> <option value="oldest">Más Antiguos</option> <option value="title-asc">Título (A-Z)</option> <option value="title-desc">Título (Z-A)</option> </select> </div>
-                             </div>
-                             {/* Filter Tags Section */}
-                             <div className="space-y-4">
-                                 {renderFilterTagGroup("Categoría Principal", mainCategoryTags, "bg-blue-600")}
-                                 {renderFilterTagGroup("Formato", formatTags, "bg-purple-600")}
-                                 {renderFilterTagGroup("Estado", statusTags, (tag) => { if (tag === 'En Progreso') return 'bg-yellow-600 text-black'; if (tag === 'Finalizado') return 'bg-green-600'; if (tag === 'Pausado') return 'bg-orange-600'; if (tag === 'Cancelado') return 'bg-red-700'; return 'bg-gray-600'; })}
-                                 {/* Clear Filters Button */}
-                                 {selectedTags.length > 0 && ( <div className="pt-3 text-right border-t border-gray-700/50 mt-4"> <button onClick={() => { setSelectedTags([]); }} className="px-3 py-1 text-xs rounded-full border border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors" > Limpiar Filtros </button> </div> )}
-                             </div>
+                           {/* Filter UI */}
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 items-end mb-6"><div><label htmlFor="search-traducciones" className="block text-sm font-medium text-gray-300 mb-1.5">Buscar por Título</label><div className="relative"><span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></span><input type="search" id="search-traducciones" placeholder="Buscar..." value={searchTerm} onChange={handleSearchChange} className="w-full pl-10 pr-4 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"/></div></div><div><label htmlFor="sort-traducciones" className="block text-sm font-medium text-gray-300 mb-1.5">Ordenar por</label><select id="sort-traducciones" value={sortBy} onChange={handleSortChange} className="w-full px-4 py-2 bg-gray-700/60 border border-gray-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-8" style={{backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.75rem center', backgroundSize: '1.25em 1.25em'}}><option value="newest">Más Recientes</option><option value="oldest">Más Antiguos</option><option value="title-asc">Título (A-Z)</option><option value="title-desc">Título (Z-A)</option></select></div>
+                           </div>
+                           <div className="space-y-4">
+                               {renderFilterTagGroup("Categoría Principal", mainCategoryTags, "bg-blue-600")}
+                               {renderFilterTagGroup("Formato", formatTags, "bg-purple-600")}
+                               {renderFilterTagGroup("Estado", statusTags, (tag) => { if (tag === 'En Progreso') return 'bg-yellow-600 text-black'; if (tag === 'Finalizado') return 'bg-green-600'; if (tag === 'Pausado') return 'bg-orange-600'; if (tag === 'Cancelado') return 'bg-red-700'; return 'bg-gray-600'; })}
+                               {selectedTags.length > 0 && ( <div className="pt-3 text-right border-t border-gray-700/50 mt-4"> <button onClick={() => { setSelectedTags([]); }} className="px-3 py-1 text-xs rounded-full border border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors" > Limpiar Filtros </button> </div> )}
+                           </div>
                         </motion.div>
 
                         {/* Anchor for scrolling */}
@@ -170,7 +207,6 @@ function TraduccionesPage() {
                             ) : (
                                 // Render ALL filtered & sorted items, grouped
                                 <motion.div variants={containerVariants} initial="hidden" animate="visible">
-                                    {/* Render sections dynamically */}
                                     {renderSectionGrid("En Progreso", inProgressItems, <svg className="h-6 w-6 mr-2 text-yellow-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, "border-yellow-500")}
                                     {renderSectionGrid("Pausado", pausedItems, <svg className="h-6 w-6 mr-2 text-orange-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, "border-orange-500")}
                                     {renderSectionGrid("Finalizado", finishedItems, <svg className="h-6 w-6 mr-2 text-green-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, "border-green-500")}
@@ -188,7 +224,7 @@ function TraduccionesPage() {
 
                 </div> {/* End Grid Layout */}
             </motion.div>
-            {/* Add ScrollToTopButton if it's not part of MainLayout */}
+            {/* Add ScrollToTopButton if needed globally */}
             {/* <ScrollToTopButton /> */}
         </>
     );
