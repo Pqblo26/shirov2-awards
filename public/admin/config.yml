@@ -22,7 +22,7 @@ collections:
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Fecha de Publicación", name: "date", widget: "datetime" }
       - { label: "Imagen Destacada", name: "imageUrl", widget: "image", required: false }
-      - { label: "Tags", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false }
+      - { label: "Tags (Adicionales)", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false, hint: "Tags extra aparte de estado, categoría, formato, etc." } # Hint añadido
       - label: "Estado"
         name: "status"
         widget: "select"
@@ -35,69 +35,71 @@ collections:
         options: ["Anime", "Donghua", "Otros"]
         required: false
 
-      # --- Campos con opción "Otro" ---
-
-      # Formato (Release)
-      - label: "Formato (Release)"
-        name: "format_select" # Renombrado para claridad
+      # --- Campo 'format_select' MODIFICADO ---
+      - label: "Formato (TV/Película/OVA...)" # Etiqueta actualizada
+        name: "format_select"
         widget: "select"
-        options: ["MKV Softsubs", "MP4 Hardsubs", "MKV Hardsubs", "BDrip", "WebRip", "Otro"] # Añadida opción "Otro"
+        options: ["TV", "OVA", "Especial", "Película", "Otro"] # Opciones ACTUALIZADAS
         required: false
       - label: "Especificar Otro Formato"
-        name: "format_other" # Nuevo campo condicional
+        name: "format_other"
         widget: "string"
         required: false
-        condition: { field: "format_select", value: "Otro" } # Aparece si se selecciona "Otro"
+        condition: { field: "format_select", value: "Otro" }
 
-      # Fuente Original / Grupo
-      - label: "Fuente Original / Grupo"
-        name: "source_select" # Renombrado
+      # --- NUEVO CAMPO 'specification_select' ---
+      - label: "Especificaciones (MKV/MP4...)"
+        name: "specification_select"
         widget: "select"
-        options: ["ShiroSubs", "Fuente Oficial", "Otro Grupo", "N/A", "Otro"] # Añadida opción "Otro"
+        options: ["MKV", "MP4", "AVI", "Otro"] # Opciones de ejemplo
+        required: false
+      - label: "Especificar Otra Especificación"
+        name: "specification_other"
+        widget: "string"
+        required: false
+        condition: { field: "specification_select", value: "Otro" }
+
+      # --- Campos restantes sin cambios en tipo de widget ---
+      - label: "Fuente Original / Grupo" # Mantenemos select + other
+        name: "source_select"
+        widget: "select"
+        options: ["ShiroSubs", "Fuente Oficial", "Otro Grupo", "N/A", "Otro"]
         required: false
       - label: "Especificar Otra Fuente/Grupo"
-        name: "source_other" # Nuevo campo condicional
+        name: "source_other"
         widget: "string"
         required: false
         condition: { field: "source_select", value: "Otro" }
-
-      # Resolución
-      - label: "Resolución"
-        name: "resolution_select" # Renombrado
+      - label: "Resolución" # Mantenemos select + other
+        name: "resolution_select"
         widget: "select"
-        options: ["1920x1080", "1280x720", "2560x1440", "3840x2160", "SD", "Otro"] # Añadida opción "Otro"
+        options: ["1920x1080", "1280x720", "2560x1440", "3840x2160", "SD", "Otro"]
         required: false
       - label: "Especificar Otra Resolución"
-        name: "resolution_other" # Nuevo campo condicional
+        name: "resolution_other"
         widget: "string"
         required: false
         condition: { field: "resolution_select", value: "Otro" }
-
-      # Codec de Video
-      - label: "Codec de Video"
-        name: "videoCodec_select" # Renombrado
+      - label: "Codec de Video" # Mantenemos select + other
+        name: "videoCodec_select"
         widget: "select"
-        options: ["H.265/HEVC", "H.264/AVC", "AV1", "VP9", "Otro"] # Añadida opción "Otro"
+        options: ["H.265/HEVC", "H.264/AVC", "AV1", "VP9", "Otro"]
         required: false
       - label: "Especificar Otro Codec Video"
-        name: "videoCodec_other" # Nuevo campo condicional
+        name: "videoCodec_other"
         widget: "string"
         required: false
         condition: { field: "videoCodec_select", value: "Otro" }
-
-      # Codec de Audio
-      - label: "Codec de Audio"
-        name: "audioCodec_select" # Renombrado
+      - label: "Codec de Audio" # Mantenemos select + other
+        name: "audioCodec_select"
         widget: "select"
-        options: ["AAC", "FLAC", "Opus", "AC3", "DTS", "Otro"] # Añadida opción "Otro"
+        options: ["AAC", "FLAC", "Opus", "AC3", "DTS", "Otro"]
         required: false
       - label: "Especificar Otro Codec Audio"
-        name: "audioCodec_other" # Nuevo campo condicional
+        name: "audioCodec_other"
         widget: "string"
         required: false
         condition: { field: "audioCodec_select", value: "Otro" }
-
-      # --- Campos que SIGUEN SIENDO Texto/String ---
       - { label: "Sinopsis / Extracto Corto", name: "excerpt", widget: "text", required: false }
       - label: "Recursos Externos"
         name: "externalResources"
@@ -105,51 +107,44 @@ collections:
         required: false
         hint: "Enlace a web oficial, MyAnimeList, etc. o N/A"
 
-      # --- Campo Lista para Descargas (con modificaciones internas) ---
+      # --- Campo Lista para Descargas (sin cambios aquí) ---
       - label: "Enlaces de Descarga"
         name: "downloads"
         widget: "list"
         label_singular: "Enlace de Descarga"
-        summary: "{{fields.quality_select}} [{{fields.format_select}}] - {{fields.server_select}}" # Actualizado summary
+        summary: "{{fields.quality_select}} [{{fields.format_select}}] - {{fields.server_select}}"
         required: false
         fields:
-          # Calidad (Descarga)
           - label: "Calidad"
-            name: "quality_select" # Renombrado
+            name: "quality_select"
             widget: "select"
-            options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"] # Añadida opción "Otro"
+            options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"]
             required: false
           - label: "Especificar Otra Calidad"
-            name: "quality_other" # Nuevo campo condicional
+            name: "quality_other"
             widget: "string"
             required: false
             condition: { field: "quality_select", value: "Otro" }
-
-          # Formato (Archivo Descarga)
           - label: "Formato (Archivo)"
-            name: "format_select" # Renombrado
+            name: "format_select"
             widget: "select"
-            options: ["MKV", "MP4", "AVI", "Otro"] # Añadida opción "Otro"
+            options: ["MKV", "MP4", "AVI", "Otro"]
             required: false
           - label: "Especificar Otro Formato Archivo"
-            name: "format_other" # Nuevo campo condicional
+            name: "format_other"
             widget: "string"
             required: false
             condition: { field: "format_select", value: "Otro" }
-
-          # Servidor (Descarga)
           - label: "Servidor"
-            name: "server_select" # Renombrado
+            name: "server_select"
             widget: "select"
-            options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"] # Añadida opción "Otro"
+            options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"]
             required: false
           - label: "Especificar Otro Servidor"
-            name: "server_other" # Nuevo campo condicional
+            name: "server_other"
             widget: "string"
             required: false
             condition: { field: "server_select", value: "Otro" }
-
-          # Campos que siguen siendo string dentro de downloads
           - { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" }
           - { label: "Notas Adicionales", name: "notes", widget: "string", required: false, hint: "Ej: v2, Parche, Incluye extras" }
 
