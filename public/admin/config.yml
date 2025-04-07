@@ -1,29 +1,23 @@
-# Configuración del Backend (Donde se guarda el contenido)
+# Configuración del Backend
 backend:
-  name: github # Usamos GitHub
-  repo: Pqblo26/shirov2-awards # Reemplaza con tu usuario/repositorio si es diferente
-  branch: main # La rama donde se guardarán los cambios
-  # commit_messages: # Opcional: Personaliza mensajes de commit
-  #   create: 'Create {{collection}} “{{slug}}”'
-  #   update: 'Update {{collection}} “{{slug}}”'
-  #   delete: 'Delete {{collection}} “{{slug}}”'
-  #   uploadMedia: 'Upload “{{path}}”'
-  #   deleteMedia: 'Delete “{{path}}”'
+  name: github
+  repo: Pqblo26/shirov2-awards
+  branch: main
+  # commit_messages: ... (opcional)
 
-# Configuración de Media (Imágenes, etc.)
-media_folder: "public/images/uploads" # Ruta relativa a la raíz del proyecto donde se guardan las imágenes
-public_folder: "/images/uploads" # Ruta pública para acceder a las imágenes en la web
+# Configuración de Media
+media_folder: "public/images/uploads"
+public_folder: "/images/uploads"
 
-# Configuración de Colecciones (Tipos de Contenido)
+# Configuración de Colecciones
 collections:
   # --- Colección para las Traducciones ---
-  - name: "traducciones" # Identificador interno (¡importante!)
-    label: "Traducciones" # Nombre visible en la interfaz del CMS
-    label_singular: "Traducción" # Nombre singular
-    folder: "content/traducciones" # Carpeta donde se guardarán los archivos .md (relativa a la raíz)
-    create: true # Permitir crear nuevas traducciones
-    slug: "{{year}}-{{month}}-{{day}}-{{slug}}" # Cómo se generará el nombre del archivo (ej: 2025-04-06-titulo-manga)
-    # Define los campos editables para cada traducción
+  - name: "traducciones"
+    label: "Traducciones"
+    label_singular: "Traducción"
+    folder: "content/traducciones"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
     fields:
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Fecha de Publicación", name: "date", widget: "datetime" }
@@ -35,62 +29,134 @@ collections:
         options: ["En Progreso", "Finalizado", "Pausado", "Cancelado"]
         default: "En Progreso"
         required: false
-      - label: "Categoría Principal" # Se mantiene por si se usa en otro sitio
+      - label: "Categoría Principal"
         name: "mainCategory"
         widget: "select"
         options: ["Anime", "Donghua", "Otros"]
         required: false
-      # --- Campo 'format' MODIFICADO ---
-      # Cambiado de 'select' a 'string' para texto libre (ej: MKV Softsubs)
-      - label: "Formato (Release)" # Etiqueta actualizada para claridad
-        name: "format"
-        widget: "string" # Cambiado a string
-        required: false
-        hint: "Ej: MKV Softsubs, MP4 Hardsubs, BDrip" # Añadido hint
-      - { label: "Fuente Original / Grupo", name: "source", widget: "string", required: false, hint: "Nombre del grupo o fuente original si aplica" } # Añadido hint
-      - { label: "Sinopsis / Extracto Corto", name: "excerpt", widget: "text", required: false }
 
-      # --- NUEVOS CAMPOS TÉCNICOS ---
+      # --- Campos con opción "Otro" ---
+
+      # Formato (Release)
+      - label: "Formato (Release)"
+        name: "format_select" # Renombrado para claridad
+        widget: "select"
+        options: ["MKV Softsubs", "MP4 Hardsubs", "MKV Hardsubs", "BDrip", "WebRip", "Otro"] # Añadida opción "Otro"
+        required: false
+      - label: "Especificar Otro Formato"
+        name: "format_other" # Nuevo campo condicional
+        widget: "string"
+        required: false
+        condition: { field: "format_select", value: "Otro" } # Aparece si se selecciona "Otro"
+
+      # Fuente Original / Grupo
+      - label: "Fuente Original / Grupo"
+        name: "source_select" # Renombrado
+        widget: "select"
+        options: ["ShiroSubs", "Fuente Oficial", "Otro Grupo", "N/A", "Otro"] # Añadida opción "Otro"
+        required: false
+      - label: "Especificar Otra Fuente/Grupo"
+        name: "source_other" # Nuevo campo condicional
+        widget: "string"
+        required: false
+        condition: { field: "source_select", value: "Otro" }
+
+      # Resolución
       - label: "Resolución"
-        name: "resolution"
+        name: "resolution_select" # Renombrado
+        widget: "select"
+        options: ["1920x1080", "1280x720", "2560x1440", "3840x2160", "SD", "Otro"] # Añadida opción "Otro"
+        required: false
+      - label: "Especificar Otra Resolución"
+        name: "resolution_other" # Nuevo campo condicional
         widget: "string"
         required: false
-        hint: "Ej: 1920x1080, 1280x720"
+        condition: { field: "resolution_select", value: "Otro" }
+
+      # Codec de Video
       - label: "Codec de Video"
-        name: "videoCodec"
+        name: "videoCodec_select" # Renombrado
+        widget: "select"
+        options: ["H.265/HEVC", "H.264/AVC", "AV1", "VP9", "Otro"] # Añadida opción "Otro"
+        required: false
+      - label: "Especificar Otro Codec Video"
+        name: "videoCodec_other" # Nuevo campo condicional
         widget: "string"
         required: false
-        hint: "Ej: H.265/HEVC, H.264/AVC"
+        condition: { field: "videoCodec_select", value: "Otro" }
+
+      # Codec de Audio
       - label: "Codec de Audio"
-        name: "audioCodec"
+        name: "audioCodec_select" # Renombrado
+        widget: "select"
+        options: ["AAC", "FLAC", "Opus", "AC3", "DTS", "Otro"] # Añadida opción "Otro"
+        required: false
+      - label: "Especificar Otro Codec Audio"
+        name: "audioCodec_other" # Nuevo campo condicional
         widget: "string"
         required: false
-        hint: "Ej: AAC (Japonés), FLAC"
+        condition: { field: "audioCodec_select", value: "Otro" }
+
+      # --- Campos que SIGUEN SIENDO Texto/String ---
+      - { label: "Sinopsis / Extracto Corto", name: "excerpt", widget: "text", required: false }
       - label: "Recursos Externos"
         name: "externalResources"
         widget: "string"
         required: false
         hint: "Enlace a web oficial, MyAnimeList, etc. o N/A"
 
-      # --- NUEVO CAMPO LISTA PARA DESCARGAS ---
+      # --- Campo Lista para Descargas (con modificaciones internas) ---
       - label: "Enlaces de Descarga"
         name: "downloads"
         widget: "list"
         label_singular: "Enlace de Descarga"
-        summary: "{{fields.quality}} [{{fields.format}}] - {{fields.server}}" # Resumen visible en la lista
+        summary: "{{fields.quality_select}} [{{fields.format_select}}] - {{fields.server_select}}" # Actualizado summary
         required: false
-        fields: # Campos para cada objeto dentro de la lista 'downloads'
-          - { label: "Calidad", name: "quality", widget: "string", required: false, hint: "Ej: 1080p, 720p, BD" }
-          - { label: "Formato (Archivo)", name: "format", widget: "string", required: false, hint: "Ej: MKV, MP4" }
-          - { label: "Servidor", name: "server", widget: "string", required: false, hint: "Ej: Mega, Drive, Torrent" }
-          - { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" } # URL es el único campo requerido dentro de un enlace
+        fields:
+          # Calidad (Descarga)
+          - label: "Calidad"
+            name: "quality_select" # Renombrado
+            widget: "select"
+            options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"] # Añadida opción "Otro"
+            required: false
+          - label: "Especificar Otra Calidad"
+            name: "quality_other" # Nuevo campo condicional
+            widget: "string"
+            required: false
+            condition: { field: "quality_select", value: "Otro" }
+
+          # Formato (Archivo Descarga)
+          - label: "Formato (Archivo)"
+            name: "format_select" # Renombrado
+            widget: "select"
+            options: ["MKV", "MP4", "AVI", "Otro"] # Añadida opción "Otro"
+            required: false
+          - label: "Especificar Otro Formato Archivo"
+            name: "format_other" # Nuevo campo condicional
+            widget: "string"
+            required: false
+            condition: { field: "format_select", value: "Otro" }
+
+          # Servidor (Descarga)
+          - label: "Servidor"
+            name: "server_select" # Renombrado
+            widget: "select"
+            options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"] # Añadida opción "Otro"
+            required: false
+          - label: "Especificar Otro Servidor"
+            name: "server_other" # Nuevo campo condicional
+            widget: "string"
+            required: false
+            condition: { field: "server_select", value: "Otro" }
+
+          # Campos que siguen siendo string dentro de downloads
+          - { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" }
           - { label: "Notas Adicionales", name: "notes", widget: "string", required: false, hint: "Ej: v2, Parche, Incluye extras" }
 
-      # Contenido principal de la traducción usando Markdown
-      # Aunque no se muestra en SingleTranslationPage v6/v7, se mantiene aquí por si se usa en otro lugar o futuro.
+      # Contenido principal (Markdown)
       - { label: "Contenido Principal (Markdown)", name: "body", widget: "markdown", required: false }
 
-  # --- Aquí añadirías otras colecciones en el futuro ---
+  # --- Otras colecciones (ejemplo) ---
   # - name: "premios"
   #   label: "Premios"
   #   ...etc...
