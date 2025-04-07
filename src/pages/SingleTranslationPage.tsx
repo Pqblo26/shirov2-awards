@@ -2,23 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import matter from 'gray-matter';
-import ScrollToTopButton from '../components/ScrollToTopButton'; // Assuming it's in src/components
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // --- Interfaces (DownloadLink, SingleTranslationData) ---
 interface DownloadLink { quality_select?: string; quality_other?: string; format_select?: string; format_other?: string; server_select?: string; server_other?: string; url: string; notes?: string; }
-// --- Updated SingleTranslationData Interface ---
 interface SingleTranslationData {
     slug: string; filename: string; title: string; date: string; imageUrl?: string;
     tags?: string[]; status?: string; mainCategory?: string; excerpt?: string; content: string;
     externalResources?: string;
-    // Fields with select + other options
-    format_select?: string; format_other?: string;
-    source_select?: string; source_other?: string;
-    resolution_select?: string; resolution_other?: string;
-    videoCodec_select?: string; videoCodec_other?: string;
-    audioCodec_select?: string; audioCodec_other?: string;
-    specification_select?: string; specification_other?: string; // <-- ADDED Specifications fields
-    // Downloads list
+    format_select?: string; format_other?: string; source_select?: string; source_other?: string;
+    resolution_select?: string; resolution_other?: string; videoCodec_select?: string; videoCodec_other?: string;
+    audioCodec_select?: string; audioCodec_other?: string; specification_select?: string; specification_other?: string;
     downloads?: DownloadLink[];
 }
 
@@ -38,6 +32,7 @@ function SingleTranslationPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        // --- Fetch logic remains the same ---
         setIsLoading(true); setError(null); setTranslation(null);
         const loadTranslation = async () => {
             if (!filename) { setError("Nombre de archivo inválido."); setIsLoading(false); return; }
@@ -49,8 +44,6 @@ function SingleTranslationPage() {
                 const slug = filename.replace(/^\d{4}-\d{2}-\d{2}-/, '');
                 const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
                 const downloads = Array.isArray(frontmatter.downloads) ? frontmatter.downloads : [];
-
-                // Map frontmatter data including new specification fields
                 const loadedTranslation: SingleTranslationData = {
                     filename: filename, slug: slug,
                     title: frontmatter.title ?? 'Sin Título',
@@ -63,8 +56,7 @@ function SingleTranslationPage() {
                     resolution_select: frontmatter.resolution_select, resolution_other: frontmatter.resolution_other,
                     videoCodec_select: frontmatter.videoCodec_select, videoCodec_other: frontmatter.videoCodec_other,
                     audioCodec_select: frontmatter.audioCodec_select, audioCodec_other: frontmatter.audioCodec_other,
-                    specification_select: frontmatter.specification_select, // <-- ADDED reading from frontmatter
-                    specification_other: frontmatter.specification_other, // <-- ADDED reading from frontmatter
+                    specification_select: frontmatter.specification_select, specification_other: frontmatter.specification_other,
                     downloads: downloads,
                 };
                 setTranslation(loadedTranslation);
@@ -83,9 +75,17 @@ function SingleTranslationPage() {
     const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } } };
 
     // --- Loading / Error / Not Found States ---
-    if (isLoading) { /* ... loading spinner ... */ }
-    if (error) { /* ... error message ... */ }
-    if (!translation) { /* ... not found message ... */ }
+    if (isLoading) { /* ... loading spinner ... */
+        return ( <div className="flex justify-center items-center min-h-[50vh]"> <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-t-cyan-500 border-r-cyan-500/30 border-b-cyan-500/30 border-l-cyan-500/30 rounded-full" ></motion.div> </div> );
+    }
+    if (error) { /* ... error message ... */
+        return ( <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center"> <motion.div variants={itemVariants} initial="hidden" animate="visible"> <h1 className="text-2xl font-bold text-red-500 mb-4">Error</h1> <p className="text-gray-400 mb-6">{error}</p> <Link to="/traducciones" className="text-cyan-400 hover:text-cyan-300 hover:underline">Volver a Traducciones</Link> </motion.div> </div> );
+    }
+    // --- MODIFIED: Strengthen check before accessing translation ---
+    // Although theoretically covered by !translation check, this adds safety for production build quirks
+    if (!translation) {
+        return <div className="text-center py-12 text-gray-500">Traducción no disponible o cargando...</div>;
+    }
 
     // --- Helper function to get display value ---
     const getDisplayValue = (selectValue?: string, otherValue?: string): string | undefined => {
@@ -93,17 +93,16 @@ function SingleTranslationPage() {
         return selectValue;
     };
 
-    // --- Prepare details list data - ADDED Specifications ---
+    // --- Prepare details list data - ADDED Optional Chaining ---
     const detailsList = [
-        { label: "Fansubbing Work", value: getDisplayValue(translation.source_select, translation.source_other) },
-        // { label: "Recursos externos", value: translation.externalResources }, // Handled separately
-        { label: "Formato", value: getDisplayValue(translation.format_select, translation.format_other) },
-        { label: "Especificaciones", value: getDisplayValue(translation.specification_select, translation.specification_other) }, // <-- ADDED Specifications item
-        { label: "Resolución", value: getDisplayValue(translation.resolution_select, translation.resolution_other) },
-        { label: "Video", value: getDisplayValue(translation.videoCodec_select, translation.videoCodec_other) },
-        { label: "Audio", value: getDisplayValue(translation.audioCodec_select, translation.audioCodec_other) },
-        { label: "Estado", value: translation.status },
-    ].filter(item => item.value); // Filter out items without a final value
+        { label: "Fansubbing Work", value: getDisplayValue(translation?.source_select, translation?.source_other) },
+        { label: "Formato", value: getDisplayValue(translation?.format_select, translation?.format_other) },
+        { label: "Especificaciones", value: getDisplayValue(translation?.specification_select, translation?.specification_other) },
+        { label: "Resolución", value: getDisplayValue(translation?.resolution_select, translation?.resolution_other) },
+        { label: "Video", value: getDisplayValue(translation?.videoCodec_select, translation?.videoCodec_other) },
+        { label: "Audio", value: getDisplayValue(translation?.audioCodec_select, translation?.audioCodec_other) },
+        { label: "Estado", value: translation?.status }, // Also add optional chaining here for consistency
+    ].filter(item => item.value);
 
     // Helper component for Detail Item Block
     const DetailItem: React.FC<{ label: string; value: string | undefined | null }> = ({ label, value }) => { /* ... component code ... */
@@ -131,17 +130,17 @@ function SingleTranslationPage() {
 
                 {/* Title */}
                 <motion.h1 variants={itemVariants} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-10">
-                    {translation.title}
+                    {translation.title} {/* Safe here because of the !translation check above */}
                 </motion.h1>
 
                 {/* --- Main Info Section (Image + Details) --- */}
                 <motion.section variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
                     {/* Left Column: Image */}
                     <div className="lg:col-span-1">
-                         {/* ... Image rendering ... */}
                          <div className="rounded-lg shadow-xl overflow-hidden border border-gray-700/50">
-                             {translation.imageUrl ? ( <motion.img src={translation.imageUrl} alt={`Imagen para ${translation.title}`} className="w-full h-auto object-cover aspect-[2/3]" loading="lazy" onError={(e) => { const imgElement = e.target as HTMLImageElement; imgElement.style.display = 'none'; const placeholder = imgElement.parentElement?.querySelector('.placeholder-image'); placeholder?.classList.remove('hidden'); }} /> ) : null}
-                             <div className={`placeholder-image w-full h-auto bg-gray-800/50 aspect-[2/3] flex items-center justify-center ${translation.imageUrl ? 'hidden' : ''}`}> <span className="text-gray-500 italic">Imagen no disponible</span> </div>
+                             {/* Added optional chaining for safety */}
+                             {translation?.imageUrl ? ( <motion.img src={translation.imageUrl} alt={`Imagen para ${translation.title}`} className="w-full h-auto object-cover aspect-[2/3]" loading="lazy" onError={(e) => { const imgElement = e.target as HTMLImageElement; imgElement.style.display = 'none'; const placeholder = imgElement.parentElement?.querySelector('.placeholder-image'); placeholder?.classList.remove('hidden'); }} /> ) : null}
+                             <div className={`placeholder-image w-full h-auto bg-gray-800/50 aspect-[2/3] flex items-center justify-center ${translation?.imageUrl ? 'hidden' : ''}`}> <span className="text-gray-500 italic">Imagen no disponible</span> </div>
                         </div>
                     </div>
                     {/* Right Column: Details Box */}
@@ -149,12 +148,13 @@ function SingleTranslationPage() {
                         <h2 className="flex items-center text-xl font-semibold text-white mb-5 border-b border-cyan-500/30 pb-2">
                             <IconClipboardList className="w-5 h-5 mr-2 text-cyan-400"/> Detalles Técnicos
                         </h2>
-                        {/* Updated grid to include Specifications */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            {/* detailsList already handles filtering null/undefined values */}
                             {detailsList.map((item) => (
                                 <DetailItem key={item.label} label={item.label} value={item.value} />
                             ))}
-                            {translation.externalResources && (
+                            {/* Added optional chaining for safety */}
+                            {translation?.externalResources && (
                                  <div className="border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm">
                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Recursos Externos</p>
                                     <a href={translation.externalResources} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-base text-cyan-400 hover:text-cyan-300 hover:underline transition-colors break-all" >
@@ -163,7 +163,8 @@ function SingleTranslationPage() {
                                     </a>
                                 </div>
                             )}
-                             {translation.tags && translation.tags.length > 0 && (
+                             {/* Added optional chaining for safety */}
+                             {translation?.tags && translation.tags.length > 0 && (
                                  <div className="sm:col-span-2 border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm">
                                       <p className="flex items-center text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1"> <IconTag className="w-3.5 h-3.5 mr-1.5"/> Tags </p>
                                       <div className="flex flex-wrap gap-2 items-center mt-1.5">
@@ -172,13 +173,14 @@ function SingleTranslationPage() {
                                   </div>
                              )}
                         </div>
-                         {/* Updated condition for no details message */}
-                         {detailsList.length === 0 && !translation.externalResources && (!translation.tags || translation.tags.length === 0) && ( <p className="text-gray-500 italic text-sm mt-4">No hay detalles técnicos disponibles.</p> )}
+                         {/* Updated condition slightly */}
+                         {detailsList.length === 0 && !translation?.externalResources && (!translation?.tags || translation.tags.length === 0) && ( <p className="text-gray-500 italic text-sm mt-4">No hay detalles técnicos disponibles.</p> )}
                     </div>
                 </motion.section>
 
                  {/* --- Sinopsis Section --- */}
-                 {translation.excerpt && (
+                 {/* Added optional chaining for safety */}
+                 {translation?.excerpt && (
                     <motion.section variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50">
                          <h2 className="flex items-center text-xl font-semibold text-white mb-3 border-b border-cyan-500/30 pb-2"> <IconBookOpen className="w-5 h-5 mr-2 text-cyan-400"/> Sinopsis </h2>
                          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
@@ -190,8 +192,28 @@ function SingleTranslationPage() {
                 {/* --- Downloads Section --- */}
                 <motion.section variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50">
                      <h2 className="flex items-center text-xl font-semibold text-white mb-4 border-b border-cyan-500/30 pb-2"> <IconDownload className="w-5 h-5 mr-2 text-cyan-400"/> Descargas </h2>
-                     {/* ... Downloads rendering logic ... */}
-                     {translation.downloads && translation.downloads.length > 0 ? ( <div className="space-y-4"> {translation.downloads.map((link, index) => { const quality = getDisplayValue(link.quality_select, link.quality_other); const format = getDisplayValue(link.format_select, link.format_other); const server = getDisplayValue(link.server_select, link.server_other); return ( <motion.div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-700/60 rounded-lg border border-gray-600/50 shadow-sm" whileHover={{ backgroundColor: 'rgb(55 65 81 / 0.8)', scale: 1.01 }} transition={{ duration: 0.2 }} > <div className="flex-1 mb-3 sm:mb-0 mr-4"> <span className="font-semibold text-white text-base"> {quality || 'Archivo'} {format ? `[${format}]` : ''} {server ? `- ${server}` : ''} </span> {link.notes && <p className="text-xs text-gray-400 mt-1">{link.notes}</p>} </div> <motion.a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-block bg-cyan-600 text-white text-sm font-bold py-2 px-5 rounded-md shadow-md whitespace-nowrap" whileHover={{ scale: 1.05, backgroundColor: 'rgb(8 145 178)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'}} whileTap={{ scale: 0.95 }} transition={{ duration: 0.15 }} > Descargar </motion.a> </motion.div> ); })} </div> ) : ( <p className="text-gray-500 italic">No hay enlaces de descarga disponibles para esta traducción.</p> )}
+                     {/* Added optional chaining for safety */}
+                     {translation?.downloads && translation.downloads.length > 0 ? (
+                         <div className="space-y-4">
+                             {translation.downloads.map((link, index) => {
+                                 // Use optional chaining when accessing link properties too, just in case
+                                 const quality = getDisplayValue(link?.quality_select, link?.quality_other);
+                                 const format = getDisplayValue(link?.format_select, link?.format_other);
+                                 const server = getDisplayValue(link?.server_select, link?.server_other);
+                                 // Ensure URL exists before rendering link
+                                 if (!link?.url) return null;
+                                 return (
+                                     <motion.div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-700/60 rounded-lg border border-gray-600/50 shadow-sm" whileHover={{ backgroundColor: 'rgb(55 65 81 / 0.8)', scale: 1.01 }} transition={{ duration: 0.2 }} >
+                                         <div className="flex-1 mb-3 sm:mb-0 mr-4">
+                                             <span className="font-semibold text-white text-base"> {quality || 'Archivo'} {format ? `[${format}]` : ''} {server ? `- ${server}` : ''} </span>
+                                             {link.notes && <p className="text-xs text-gray-400 mt-1">{link.notes}</p>}
+                                         </div>
+                                         <motion.a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-block bg-cyan-600 text-white text-sm font-bold py-2 px-5 rounded-md shadow-md whitespace-nowrap" whileHover={{ scale: 1.05, backgroundColor: 'rgb(8 145 178)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'}} whileTap={{ scale: 0.95 }} transition={{ duration: 0.15 }} > Descargar </motion.a>
+                                     </motion.div>
+                                 );
+                             })}
+                         </div>
+                     ) : ( <p className="text-gray-500 italic">No hay enlaces de descarga disponibles para esta traducción.</p> )}
                 </motion.section>
 
                 {/* --- Comment section placeholder --- */}
@@ -208,3 +230,4 @@ function SingleTranslationPage() {
 }
 
 export default SingleTranslationPage;
+
