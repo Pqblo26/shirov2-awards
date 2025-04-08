@@ -21,7 +21,7 @@ excerpt: >-
   Kunoichi que es una otaku y una NEET!
 
 
-  (Fuente: HIDIVE)
+  (Fuente: HIDIVE) 
 externalResources: https://anilist.co/anime/185992/NEET-Kunoichi-to-Naze-ka-Dousei-Hajimemashita-OVAs/
 downloads:
   - quality_select: 1080p
