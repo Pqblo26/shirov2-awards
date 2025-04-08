@@ -1,5 +1,5 @@
 ---
-title: I'm Living With a Otaku NEET Kunoichi?!
+title: I'm Living With a Otaku NEET Kunoichi?
 date: 2025-04-08T16:20:00.000Z
 imageUrl: https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx174654-J8OduNFjRpVY.jpg
 status: Finalizado
@@ -9,7 +9,6 @@ specification_select: MKV
 source_select: ShiroSubs
 resolution_select: 1920x1080
 videoCodec_select: H.265/HEVC
-audioCodec_select: AAC
 excerpt: >-
   Para proteger de los demonios a un hombre de negocios corriente, Tsukasa
   Atsumi, una kunoichi genio, Shizuri Ideura, firma con él un contrato de
@@ -28,4 +27,5 @@ downloads:
     format_select: MKV
     server_select: Google Drive
     url: https://drive.google.com/drive/folders/1n4kVs8tv4LqAL9xdPJw5MBXQEn6nOMHK?usp=sharing
+audioCodec_select: AAC
 ---
