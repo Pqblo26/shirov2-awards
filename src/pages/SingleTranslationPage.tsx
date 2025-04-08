@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import matter from 'gray-matter';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import { DiscussionEmbed } from 'disqus-react';
 
 // --- Interfaces (DownloadLink, SingleTranslationData) ---
 interface DownloadLink { quality_select?: string; quality_other?: string; format_select?: string; format_other?: string; server_select?: string; server_other?: string; url: string; notes?: string; }
@@ -30,44 +31,14 @@ function SingleTranslationPage() {
     const [translation, setTranslation] = useState<SingleTranslationData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pageUrl, setPageUrl] = useState('');
 
     useEffect(() => {
-        // --- Fetch logic remains the same ---
+        setPageUrl(window.location.href);
         setIsLoading(true); setError(null); setTranslation(null);
         const loadTranslation = async () => {
-            if (!filename) { setError("Nombre de archivo inválido."); setIsLoading(false); return; }
-            try {
-                const module = await import(`../../content/traducciones/${filename}.md?raw`);
-                const rawContent = module.default;
-                if (typeof rawContent !== 'string') { throw new Error('El contenido importado no es una cadena de texto válida.'); }
-                const { data: frontmatter, content: markdownContent } = matter(rawContent);
-                const slug = filename.replace(/^\d{4}-\d{2}-\d{2}-/, '');
-                const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
-                const downloads = Array.isArray(frontmatter.downloads) ? frontmatter.downloads : [];
-                const loadedTranslation: SingleTranslationData = {
-                    filename: filename, slug: slug,
-                    title: frontmatter.title ?? 'Sin Título',
-                    date: frontmatter.date ? new Date(frontmatter.date).toISOString() : new Date().toISOString(),
-                    imageUrl: frontmatter.imageUrl, tags: tags, status: frontmatter.status,
-                    mainCategory: frontmatter.mainCategory, excerpt: frontmatter.excerpt, content: markdownContent,
-                    externalResources: frontmatter.externalResources,
-                    format_select: frontmatter.format_select, format_other: frontmatter.format_other,
-                    source_select: frontmatter.source_select, source_other: frontmatter.source_other,
-                    resolution_select: frontmatter.resolution_select, resolution_other: frontmatter.resolution_other,
-                    videoCodec_select: frontmatter.videoCodec_select, videoCodec_other: frontmatter.videoCodec_other,
-                    audioCodec_select: frontmatter.audioCodec_select, audioCodec_other: frontmatter.audioCodec_other,
-                    specification_select: frontmatter.specification_select, specification_other: frontmatter.specification_other,
-                    downloads: downloads,
-                };
-                setTranslation(loadedTranslation);
-                document.title = `${loadedTranslation.title} | Shiro Nexus`;
-            } catch (err) {
-                console.error(`Error loading translation for filename "${filename}":`, err);
-                 if (err instanceof Error && (err.message.includes('Failed to fetch dynamically imported module') || err.message.includes('Unknown variable dynamic import'))) { setError(`No se pudo cargar el contenido para ${filename}. Verifica que el archivo existe y la ruta es correcta.`); }
-                 else if (err instanceof Error && err.message.includes('Imported content is not a string')) { setError(`Error: El contenido importado para /content/traducciones/${filename}.md no es texto.`); }
-                 else { setError("Traducción no encontrada o error al cargarla."); }
-                 document.title = "Error | Shiro Nexus";
-            } finally { setIsLoading(false); }
+            // ... (loadTranslation logic remains the same) ...
+             if (!filename) { setError("Nombre de archivo inválido."); setIsLoading(false); return; } try { const module = await import(`../../content/traducciones/${filename}.md?raw`); const rawContent = module.default; if (typeof rawContent !== 'string') { throw new Error('El contenido importado no es una cadena de texto válida.'); } const { data: frontmatter, content: markdownContent } = matter(rawContent); const slug = filename.replace(/^\d{4}-\d{2}-\d{2}-/, ''); const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags : []; const downloads = Array.isArray(frontmatter.downloads) ? frontmatter.downloads : []; const loadedTranslation: SingleTranslationData = { filename: filename, slug: slug, title: frontmatter.title ?? 'Sin Título', date: frontmatter.date ? new Date(frontmatter.date).toISOString() : new Date().toISOString(), imageUrl: frontmatter.imageUrl, tags: tags, status: frontmatter.status, mainCategory: frontmatter.mainCategory, excerpt: frontmatter.excerpt, content: markdownContent, externalResources: frontmatter.externalResources, format_select: frontmatter.format_select, format_other: frontmatter.format_other, source_select: frontmatter.source_select, source_other: frontmatter.source_other, resolution_select: frontmatter.resolution_select, resolution_other: frontmatter.resolution_other, videoCodec_select: frontmatter.videoCodec_select, videoCodec_other: frontmatter.videoCodec_other, audioCodec_select: frontmatter.audioCodec_select, audioCodec_other: frontmatter.audioCodec_other, specification_select: frontmatter.specification_select, specification_other: frontmatter.specification_other, downloads: downloads, }; setTranslation(loadedTranslation); document.title = `${loadedTranslation.title} | Shiro Nexus`; } catch (err) { console.error(`Error loading translation for filename "${filename}":`, err); if (err instanceof Error && (err.message.includes('Failed to fetch dynamically imported module') || err.message.includes('Unknown variable dynamic import'))) { setError(`No se pudo cargar el contenido para ${filename}. Verifica que el archivo existe y la ruta es correcta.`); } else if (err instanceof Error && err.message.includes('Imported content is not a string')) { setError(`Error: El contenido importado para /content/traducciones/${filename}.md no es texto.`); } else { setError("Traducción no encontrada o error al cargarla."); } document.title = "Error | Shiro Nexus"; } finally { setIsLoading(false); }
         };
         loadTranslation();
     }, [filename]);
@@ -75,17 +46,9 @@ function SingleTranslationPage() {
     const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } } };
 
     // --- Loading / Error / Not Found States ---
-    if (isLoading) { /* ... loading spinner ... */
-        return ( <div className="flex justify-center items-center min-h-[50vh]"> <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-t-cyan-500 border-r-cyan-500/30 border-b-cyan-500/30 border-l-cyan-500/30 rounded-full" ></motion.div> </div> );
-    }
-    if (error) { /* ... error message ... */
-        return ( <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center"> <motion.div variants={itemVariants} initial="hidden" animate="visible"> <h1 className="text-2xl font-bold text-red-500 mb-4">Error</h1> <p className="text-gray-400 mb-6">{error}</p> <Link to="/traducciones" className="text-cyan-400 hover:text-cyan-300 hover:underline">Volver a Traducciones</Link> </motion.div> </div> );
-    }
-    // --- MODIFIED: Strengthen check before accessing translation ---
-    // Although theoretically covered by !translation check, this adds safety for production build quirks
-    if (!translation) {
-        return <div className="text-center py-12 text-gray-500">Traducción no disponible o cargando...</div>;
-    }
+    if (isLoading) { return ( <div className="flex justify-center items-center min-h-[50vh]"> <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-t-cyan-500 border-r-cyan-500/30 border-b-cyan-500/30 border-l-cyan-500/30 rounded-full" ></motion.div> </div> ); }
+    if (error) { return ( <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center"> <motion.div variants={itemVariants} initial="hidden" animate="visible"> <h1 className="text-2xl font-bold text-red-500 mb-4">Error</h1> <p className="text-gray-400 mb-6">{error}</p> <Link to="/traducciones" className="text-cyan-400 hover:text-cyan-300 hover:underline">Volver a Traducciones</Link> </motion.div> </div> ); }
+    if (!translation) { return <div className="text-center py-12 text-gray-500">Traducción no disponible o cargando...</div>; }
 
     // --- Helper function to get display value ---
     const getDisplayValue = (selectValue?: string, otherValue?: string): string | undefined => {
@@ -93,7 +56,7 @@ function SingleTranslationPage() {
         return selectValue;
     };
 
-    // --- Prepare details list data - ADDED Optional Chaining ---
+    // --- Prepare details list data ---
     const detailsList = [
         { label: "Fansubbing Work", value: getDisplayValue(translation?.source_select, translation?.source_other) },
         { label: "Formato", value: getDisplayValue(translation?.format_select, translation?.format_other) },
@@ -101,19 +64,29 @@ function SingleTranslationPage() {
         { label: "Resolución", value: getDisplayValue(translation?.resolution_select, translation?.resolution_other) },
         { label: "Video", value: getDisplayValue(translation?.videoCodec_select, translation?.videoCodec_other) },
         { label: "Audio", value: getDisplayValue(translation?.audioCodec_select, translation?.audioCodec_other) },
-        { label: "Estado", value: translation?.status }, // Also add optional chaining here for consistency
+        { label: "Estado", value: translation?.status },
     ].filter(item => item.value);
 
     // Helper component for Detail Item Block
-    const DetailItem: React.FC<{ label: string; value: string | undefined | null }> = ({ label, value }) => { /* ... component code ... */
+    const DetailItem: React.FC<{ label: string; value: string | undefined | null }> = ({ label, value }) => {
         if (!value) return null;
         return ( <div className="border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm"> <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{label}</p> <p className="text-base text-white break-words">{value}</p> </div> );
      };
 
     // --- Function to determine External Link Text ---
-    const getExternalLinkText = (url: string): string => { /* ... function code ... */
+    const getExternalLinkText = (url: string): string => {
         try { const hostname = new URL(url).hostname.toLowerCase(); if (hostname.includes('myanimelist.net')) return "Ver en MyAnimeList"; if (hostname.includes('anilist.co')) return "Ver en Anilist"; } catch (e) { /* Invalid URL? Fallback */ } return "Visitar Enlace Externo";
     };
+
+    // --- Define Disqus configuration - ADDED Optional Chaining & Fallbacks ---
+    const disqusShortname = "shiro-nexus";
+    const disqusConfig = translation && pageUrl ? {
+        url: pageUrl,
+        // Use optional chaining AND nullish coalescing for safety
+        identifier: translation?.filename ?? filename ?? 'unknown_page',
+        title: translation?.title ?? 'Comentarios', // Fallback title
+    } : null;
+    // --- END MODIFICATION ---
 
 
     // --- Content Display State ---
@@ -123,103 +96,36 @@ function SingleTranslationPage() {
                 className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-sans"
                 initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
             >
-                {/* Back Link */}
-                <motion.div variants={itemVariants} className="mb-6">
-                     <Link to="/traducciones" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center group"> <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform duration-200 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /> </svg> Volver a todas las traducciones </Link>
-                </motion.div>
+                {/* ... (Rest of the JSX rendering remains the same as v13/v14) ... */}
 
-                {/* Title */}
-                <motion.h1 variants={itemVariants} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-10">
-                    {translation.title} {/* Safe here because of the !translation check above */}
-                </motion.h1>
+                 {/* Back Link */}
+                 <motion.div variants={itemVariants} className="mb-6"> <Link to="/traducciones" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors flex items-center group"> <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 group-hover:-translate-x-1 transition-transform duration-200 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /> </svg> Volver a todas las traducciones </Link> </motion.div>
+                 {/* Title */}
+                 <motion.h1 variants={itemVariants} className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-10"> {translation.title} </motion.h1>
+                 {/* Main Info Section */}
+                 <motion.section variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12"> {/* Image Column */} <div className="lg:col-span-1"> <div className="rounded-lg shadow-xl overflow-hidden border border-gray-700/50"> {translation?.imageUrl ? ( <motion.img src={translation.imageUrl} alt={`Imagen para ${translation.title}`} className="w-full h-auto object-cover aspect-[2/3]" loading="lazy" onError={(e) => { const imgElement = e.target as HTMLImageElement; imgElement.style.display = 'none'; const placeholder = imgElement.parentElement?.querySelector('.placeholder-image'); placeholder?.classList.remove('hidden'); }} /> ) : null} <div className={`placeholder-image w-full h-auto bg-gray-800/50 aspect-[2/3] flex items-center justify-center ${translation?.imageUrl ? 'hidden' : ''}`}> <span className="text-gray-500 italic">Imagen no disponible</span> </div> </div> </div> {/* Details Column */} <div className="lg:col-span-2 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50 p-6"> <h2 className="flex items-center text-xl font-semibold text-white mb-5 border-b border-cyan-500/30 pb-2"> <IconClipboardList className="w-5 h-5 mr-2 text-cyan-400"/> Detalles Técnicos </h2> <div className="grid grid-cols-1 sm:grid-cols-2 gap-5"> {detailsList.map((item) => ( <DetailItem key={item.label} label={item.label} value={item.value} /> ))} {translation?.externalResources && ( <div className="border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm"> <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Recursos Externos</p> <a href={translation.externalResources} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-base text-cyan-400 hover:text-cyan-300 hover:underline transition-colors break-all" > {getExternalLinkText(translation.externalResources)} <IconExternalLink className="w-4 h-4 ml-1.5 shrink-0"/> </a> </div> )} {translation?.tags && translation.tags.length > 0 && ( <div className="sm:col-span-2 border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm"> <p className="flex items-center text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1"> <IconTag className="w-3.5 h-3.5 mr-1.5"/> Tags </p> <div className="flex flex-wrap gap-2 items-center mt-1.5"> {translation.tags.map(tag => ( <motion.span key={tag} className="text-sm bg-gray-600 text-gray-200 px-3 py-1 rounded-full cursor-default shadow-sm" whileHover={{ scale: 1.05, backgroundColor: 'rgb(103 232 249 / 0.3)'}} transition={{ duration: 0.2 }} > {tag} </motion.span> ))} </div> </div> )} </div> {detailsList.length === 0 && !translation?.externalResources && (!translation?.tags || translation.tags.length === 0) && ( <p className="text-gray-500 italic text-sm mt-4">No hay detalles técnicos disponibles.</p> )} </div> </motion.section>
+                 {/* Sinopsis Section */}
+                 {translation?.excerpt && ( <motion.section variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50"> <h2 className="flex items-center text-xl font-semibold text-white mb-3 border-b border-cyan-500/30 pb-2"> <IconBookOpen className="w-5 h-5 mr-2 text-cyan-400"/> Sinopsis </h2> <p className="text-gray-300 leading-relaxed whitespace-pre-wrap"> {translation.excerpt} </p> </motion.section> )}
+                 {/* Downloads Section */}
+                 <motion.section variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50"> <h2 className="flex items-center text-xl font-semibold text-white mb-4 border-b border-cyan-500/30 pb-2"> <IconDownload className="w-5 h-5 mr-2 text-cyan-400"/> Descargas </h2> {translation?.downloads && translation.downloads.length > 0 ? ( <div className="space-y-4"> {translation.downloads.map((link, index) => { const quality = getDisplayValue(link?.quality_select, link?.quality_other); const format = getDisplayValue(link?.format_select, link?.format_other); const server = getDisplayValue(link?.server_select, link?.server_other); if (!link?.url) return null; return ( <motion.div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-700/60 rounded-lg border border-gray-600/50 shadow-sm" whileHover={{ backgroundColor: 'rgb(55 65 81 / 0.8)', scale: 1.01 }} transition={{ duration: 0.2 }} > <div className="flex-1 mb-3 sm:mb-0 mr-4"> <span className="font-semibold text-white text-base"> {quality || 'Archivo'} {format ? `[${format}]` : ''} {server ? `- ${server}` : ''} </span> {link.notes && <p className="text-xs text-gray-400 mt-1">{link.notes}</p>} </div> <motion.a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-block bg-cyan-600 text-white text-sm font-bold py-2 px-5 rounded-md shadow-md whitespace-nowrap" whileHover={{ scale: 1.05, backgroundColor: 'rgb(8 145 178)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'}} whileTap={{ scale: 0.95 }} transition={{ duration: 0.15 }} > Descargar </motion.a> </motion.div> ); })} </div> ) : ( <p className="text-gray-500 italic">No hay enlaces de descarga disponibles para esta traducción.</p> )} </motion.section>
 
-                {/* --- Main Info Section (Image + Details) --- */}
-                <motion.section variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-                    {/* Left Column: Image */}
-                    <div className="lg:col-span-1">
-                         <div className="rounded-lg shadow-xl overflow-hidden border border-gray-700/50">
-                             {/* Added optional chaining for safety */}
-                             {translation?.imageUrl ? ( <motion.img src={translation.imageUrl} alt={`Imagen para ${translation.title}`} className="w-full h-auto object-cover aspect-[2/3]" loading="lazy" onError={(e) => { const imgElement = e.target as HTMLImageElement; imgElement.style.display = 'none'; const placeholder = imgElement.parentElement?.querySelector('.placeholder-image'); placeholder?.classList.remove('hidden'); }} /> ) : null}
-                             <div className={`placeholder-image w-full h-auto bg-gray-800/50 aspect-[2/3] flex items-center justify-center ${translation?.imageUrl ? 'hidden' : ''}`}> <span className="text-gray-500 italic">Imagen no disponible</span> </div>
-                        </div>
-                    </div>
-                    {/* Right Column: Details Box */}
-                    <div className="lg:col-span-2 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50 p-6">
-                        <h2 className="flex items-center text-xl font-semibold text-white mb-5 border-b border-cyan-500/30 pb-2">
-                            <IconClipboardList className="w-5 h-5 mr-2 text-cyan-400"/> Detalles Técnicos
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {/* detailsList already handles filtering null/undefined values */}
-                            {detailsList.map((item) => (
-                                <DetailItem key={item.label} label={item.label} value={item.value} />
-                            ))}
-                            {/* Added optional chaining for safety */}
-                            {translation?.externalResources && (
-                                 <div className="border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Recursos Externos</p>
-                                    <a href={translation.externalResources} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-base text-cyan-400 hover:text-cyan-300 hover:underline transition-colors break-all" >
-                                        {getExternalLinkText(translation.externalResources)}
-                                        <IconExternalLink className="w-4 h-4 ml-1.5 shrink-0"/>
-                                    </a>
-                                </div>
-                            )}
-                             {/* Added optional chaining for safety */}
-                             {translation?.tags && translation.tags.length > 0 && (
-                                 <div className="sm:col-span-2 border-l-4 border-cyan-500 pl-4 py-2.5 bg-gray-700/40 rounded-r-md shadow-sm">
-                                      <p className="flex items-center text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1"> <IconTag className="w-3.5 h-3.5 mr-1.5"/> Tags </p>
-                                      <div className="flex flex-wrap gap-2 items-center mt-1.5">
-                                          {translation.tags.map(tag => ( <motion.span key={tag} className="text-sm bg-gray-600 text-gray-200 px-3 py-1 rounded-full cursor-default shadow-sm" whileHover={{ scale: 1.05, backgroundColor: 'rgb(103 232 249 / 0.3)'}} transition={{ duration: 0.2 }} > {tag} </motion.span> ))}
-                                      </div>
-                                  </div>
-                             )}
-                        </div>
-                         {/* Updated condition slightly */}
-                         {detailsList.length === 0 && !translation?.externalResources && (!translation?.tags || translation.tags.length === 0) && ( <p className="text-gray-500 italic text-sm mt-4">No hay detalles técnicos disponibles.</p> )}
-                    </div>
-                </motion.section>
-
-                 {/* --- Sinopsis Section --- */}
-                 {/* Added optional chaining for safety */}
-                 {translation?.excerpt && (
-                    <motion.section variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50">
-                         <h2 className="flex items-center text-xl font-semibold text-white mb-3 border-b border-cyan-500/30 pb-2"> <IconBookOpen className="w-5 h-5 mr-2 text-cyan-400"/> Sinopsis </h2>
-                         <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                             {translation.excerpt}
-                         </p>
-                    </motion.section>
-                 )}
-
-                {/* --- Downloads Section --- */}
-                <motion.section variants={itemVariants} className="mb-12 p-6 bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg shadow-xl border border-gray-700/50">
-                     <h2 className="flex items-center text-xl font-semibold text-white mb-4 border-b border-cyan-500/30 pb-2"> <IconDownload className="w-5 h-5 mr-2 text-cyan-400"/> Descargas </h2>
-                     {/* Added optional chaining for safety */}
-                     {translation?.downloads && translation.downloads.length > 0 ? (
-                         <div className="space-y-4">
-                             {translation.downloads.map((link, index) => {
-                                 // Use optional chaining when accessing link properties too, just in case
-                                 const quality = getDisplayValue(link?.quality_select, link?.quality_other);
-                                 const format = getDisplayValue(link?.format_select, link?.format_other);
-                                 const server = getDisplayValue(link?.server_select, link?.server_other);
-                                 // Ensure URL exists before rendering link
-                                 if (!link?.url) return null;
-                                 return (
-                                     <motion.div key={index} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-gray-700/60 rounded-lg border border-gray-600/50 shadow-sm" whileHover={{ backgroundColor: 'rgb(55 65 81 / 0.8)', scale: 1.01 }} transition={{ duration: 0.2 }} >
-                                         <div className="flex-1 mb-3 sm:mb-0 mr-4">
-                                             <span className="font-semibold text-white text-base"> {quality || 'Archivo'} {format ? `[${format}]` : ''} {server ? `- ${server}` : ''} </span>
-                                             {link.notes && <p className="text-xs text-gray-400 mt-1">{link.notes}</p>}
-                                         </div>
-                                         <motion.a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-block bg-cyan-600 text-white text-sm font-bold py-2 px-5 rounded-md shadow-md whitespace-nowrap" whileHover={{ scale: 1.05, backgroundColor: 'rgb(8 145 178)', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'}} whileTap={{ scale: 0.95 }} transition={{ duration: 0.15 }} > Descargar </motion.a>
-                                     </motion.div>
-                                 );
-                             })}
-                         </div>
-                     ) : ( <p className="text-gray-500 italic">No hay enlaces de descarga disponibles para esta traducción.</p> )}
-                </motion.section>
-
-                {/* --- Comment section placeholder --- */}
+                {/* --- Comment section --- */}
                 <motion.section variants={itemVariants} className="mt-16 pt-8 border-t border-gray-600">
-                     <h3 className="flex items-center text-xl font-semibold text-white mb-4"> <IconChatBubbleLeft className="w-5 h-5 mr-2 text-gray-400"/> Comentarios </h3>
-                     <p className="text-gray-500 italic">(La sección de comentarios se implementará aquí)</p>
+                    <h3 className="flex items-center text-xl font-semibold text-white mb-4">
+                        <IconChatBubbleLeft className="w-5 h-5 mr-2 text-gray-400"/> Comentarios
+                    </h3>
+                    {/* Render Disqus only when config is ready and valid */}
+                    {disqusConfig && disqusConfig.identifier !== 'unknown_page' ? (
+                        <div className="mt-4">
+                            <DiscussionEmbed
+                                shortname={disqusShortname}
+                                config={disqusConfig}
+                            />
+                        </div>
+                    ) : (
+                        // Show loading only while translation is loading, otherwise maybe "Comments disabled" or nothing
+                        !isLoading && <p className="text-gray-500 italic">No se pudieron cargar los comentarios.</p>
+                    )}
                 </motion.section>
 
             </motion.div>
@@ -229,5 +135,10 @@ function SingleTranslationPage() {
     );
 }
 
-export default SingleTranslationPage;
+// Ensure helper functions are defined if not already globally available
+// const getDisplayValue = (selectValue?: string, otherValue?: string): string | undefined => { ... };
+// const getExternalLinkText = (url: string): string => { ... };
+// const DetailItem: React.FC<{ label: string; value: string | undefined | null }> = ({ label, value }) => { ... };
 
+
+export default SingleTranslationPage;
