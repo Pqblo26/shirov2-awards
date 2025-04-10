@@ -93,7 +93,7 @@ function SingleTranslationPage() {
 
     // --- Prepare details list data - Includes Episodes, Excludes Audio ---
     const detailsList = [
-        { label: "Fansubbing Work", value: getDisplayValue(translation?.source_select, translation?.source_other) },
+        { label: "Fansub", value: getDisplayValue(translation?.source_select, translation?.source_other) },
         { label: "Formato", value: getDisplayValue(translation?.format_select, translation?.format_other) },
         { label: "Especificaciones", value: getDisplayValue(translation?.specification_select, translation?.specification_other) },
         { label: "Resolución", value: getDisplayValue(translation?.resolution_select, translation?.resolution_other) },
