@@ -15,7 +15,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
         { href: "/", label: "Inicio" },
         { href: "/traducciones", label: "Traducciones" },
         // Commented out other links
-        // { href: "/premios", label: "Premios" },
+        { href: "/premios", label: "Premios" },
         // { href: "/votaciones", label: "Votaciones" },
         // { href: "/contacto", label: "Contacto" },
         // ...(isAdminMode ? [{ href: "/admin", label: "Admin" }] : []),
