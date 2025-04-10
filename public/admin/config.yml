@@ -82,27 +82,72 @@ collections:
 
 # ... (backend, media_folder, y otras colecciones existentes van aquí arriba) ...
 
-  # --- NUEVA COLECCIÓN: Premios ---
-  - name: "premios"             # Identificador de la colección
-    label: "Premios Shiro Awards" # Nombre visible en el CMS
-    label_singular: "Premio"    # Nombre para un solo item
-    folder: "content/premios"   # Carpeta donde se guardarán los archivos .md
-    create: true                # Permitir crear nuevos premios
-    delete: true                # Permitir borrar premios
-    slug: "{{slug}}"            # Usar el título como nombre de archivo (o puedes cambiarlo a {{award_category}}-{{winner_name}})
-    summary: "{{award_type}} - {{award_category}}: {{winner_name}}" # Resumen visible en la lista del CMS
-    fields:                     # Campos para cada premio
+  # --- COLECCIÓN PREMIOS (Modificada) ---
+  - name: "premios"
+    label: "Premios Shiro Awards"
+    label_singular: "Premio"
+    folder: "content/premios"
+    create: true
+    delete: true
+    # --- SLUG MODIFICADO: Usa el nombre del ganador ---
+    slug: "{{fields.winner_name}}"
+    # --- SUMMARY MODIFICADO ---
+    summary: "{{award_type}} - {{winner_name}}" # Muestra tipo y ganador
+    fields:
       - label: "Tipo de Premio"
         name: "award_type"
         widget: "select"
         options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género"]
         required: true
-        hint: "Clasifica el premio para agruparlo en la página."
-      - label: "Categoría del Premio"
-        name: "award_category"
-        widget: "string"
-        required: true
-        hint: "Ej: Mejor Anime de Invierno, Mejor Animación, Acción"
+        hint: "Clasifica el premio para agruparlo y mostrar las categorías correctas."
+
+      # --- CAMPO award_category (string) ELIMINADO ---
+      # - { label: "Categoría del Premio", name: "award_category", widget: "string", ... }
+
+      # --- NUEVOS CAMPOS CONDICIONALES PARA CATEGORÍA ---
+      - label: "Categoría Específica (Temporada)"
+        name: "category_temporada"
+        widget: "select"
+        condition: { field: "award_type", value: "Temporada" } # Solo se muestra si award_type es Temporada
+        options:
+          - "Mejor Anime de Invierno"
+          - "Mejor Anime de Primavera"
+          - "Mejor Anime de Verano"
+          - "Mejor Anime de Otoño"
+        required: true # Requerido cuando es visible
+      - label: "Categoría Específica (Aspecto Técnico)"
+        name: "category_aspecto"
+        widget: "select"
+        condition: { field: "award_type", value: "Aspecto Técnico" } # Solo se muestra si award_type es Aspecto Técnico
+        options:
+          - "Mejor Adaptación"
+          - "Mejor Animación"
+          - "Mejor Banda Sonora"
+          - "Mejor Estudio"
+        required: true # Requerido cuando es visible
+      - label: "Categoría Específica (Actor de Voz)"
+        name: "category_actor"
+        widget: "select"
+        condition: { field: "award_type", value: "Actor de Voz" } # Solo se muestra si award_type es Actor de Voz
+        options:
+          - "Mejor Actor de Voz"
+          - "Mejor Actriz de Voz"
+        required: true # Requerido cuando es visible
+      - label: "Categoría Específica (Género)"
+        name: "category_genero"
+        widget: "select"
+        condition: { field: "award_type", value: "Género" } # Solo se muestra si award_type es Género
+        options:
+          - "Acción"
+          - "Aventura"
+          - "Comedia"
+          - "Drama"
+          - "Deporte"
+          - "Romance"
+          # Puedes añadir más géneros aquí si los necesitas
+        required: true # Requerido cuando es visible
+      # --- FIN CAMPOS CONDICIONALES ---
+
       - label: "Nombre del Ganador"
         name: "winner_name"
         widget: "string"
@@ -120,14 +165,14 @@ collections:
       - label: "Color de la Tarjeta"
         name: "display_color"
         widget: "select"
-        options: # Asegúrate que estos valores coincidan con las keys en colorStyles de WinnerCard.tsx
+        options:
           - { label: "Azul (Temporada Invierno)", value: "blue" }
           - { label: "Rosa (Temporada Primavera)", value: "pink" }
           - { label: "Naranja (Temporada Verano)", value: "orange" }
           - { label: "Rojo (Temporada Otoño / Género)", value: "red" }
           - { label: "Amarillo (Aspecto Técnico)", value: "yellow" }
           - { label: "Índigo (Actores Voz)", value: "indigo" }
-          - { label: "Gris (Por defecto)", value: "default" } # Opcional, si quieres un color por defecto
+          - { label: "Gris (Por defecto)", value: "default" }
         required: true
         default: "default"
       - label: "Orden (Opcional)"
@@ -136,6 +181,5 @@ collections:
         required: false
         value_type: "int"
         hint: "Número para ordenar manualmente dentro de cada tipo (menor aparece primero)."
-      # Podrías añadir más campos si fueran necesarios, como 'year', 'description', etc.
 
 # ... (resto del archivo config.yml si hubiera algo más) ...
