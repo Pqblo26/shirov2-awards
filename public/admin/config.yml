@@ -80,6 +80,8 @@ collections:
       - { label: "Orden (Opcional)", name: "order", widget: "number", required: false, value_type: "int", hint: "Número para ordenar manually (menor aparece primero). Si no se usa, se ordenará por defecto." }
       - { label: "Fecha Creación (Automática)", name: "date", widget: "datetime", default: "", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false, hide: true }
 
+# ... (backend, media_folder, y otras colecciones existentes van aquí arriba) ...
+
   # --- NUEVA COLECCIÓN: Premios ---
   - name: "premios"             # Identificador de la colección
     label: "Premios Shiro Awards" # Nombre visible en el CMS
@@ -135,3 +137,5 @@ collections:
         value_type: "int"
         hint: "Número para ordenar manualmente dentro de cada tipo (menor aparece primero)."
       # Podrías añadir más campos si fueran necesarios, como 'year', 'description', etc.
+
+# ... (resto del archivo config.yml si hubiera algo más) ...
