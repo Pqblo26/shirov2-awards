@@ -17,8 +17,8 @@ interface WipItemData {
     link?: string;
     order?: number;
     date?: string;
-    // --- ADDED: New field for image fit ---
-    image_fit?: 'cover' | 'contain' | 'fill'; // Possible values from CMS
+    // --- CHANGED: Field for image position (string) ---
+    image_position?: string; // e.g., "center top", "50% 25%"
 }
 
 // --- Updated Sidebar Component ---
@@ -35,25 +35,24 @@ function Sidebar() {
     useEffect(() => {
         setIsLoadingWip(true);
         setWipError(null);
-        console.log("Sidebar: Attempting to load WIP items..."); // Added console log
+        console.log("Sidebar: Attempting to load WIP items...");
         try {
-            // Adjusted path assuming Sidebar.tsx is in src/components
-            const modules = import.meta.glob('/content/wip/*.md', { // Changed path from ../../content to /content
+            const modules = import.meta.glob('/content/wip/*.md', {
                 eager: true,
                 query: '?raw',
                 import: 'default'
             });
-            console.log("Sidebar: WIP files found:", modules); // Added console log
+            console.log("Sidebar: WIP files found:", modules);
 
             const loadedItems: WipItemData[] = [];
             if (Object.keys(modules).length === 0) {
-                 console.warn("Sidebar: No WIP files found."); // Added console log
+                 console.warn("Sidebar: No WIP files found.");
             }
 
             for (const path in modules) {
                  const rawContent = modules[path];
                  if (typeof rawContent !== 'string') {
-                     console.warn(`Sidebar: Content is not a string for WIP file: ${path}`); // Added console log
+                     console.warn(`Sidebar: Content is not a string for WIP file: ${path}`);
                      continue;
                  }
                  try {
@@ -69,8 +68,8 @@ function Sidebar() {
                         link: frontmatter.link,
                         order: frontmatter.order,
                         date: frontmatter.date,
-                        // --- ADDED: Read image_fit from frontmatter ---
-                        image_fit: frontmatter.image_fit // Will be undefined if not set
+                        // --- CHANGED: Read image_position from frontmatter ---
+                        image_position: frontmatter.image_position // Read the position string
                     });
                  } catch (parseError) {
                     console.error(`Sidebar: Error parsing WIP item: ${path}`, parseError);
@@ -78,14 +77,14 @@ function Sidebar() {
                }
             // Sort items (unchanged)
             loadedItems.sort((a, b) => { if (a.order !== undefined && b.order !== undefined) { return a.order - b.order; } if (a.order !== undefined) return -1; if (b.order !== undefined) return 1; return a.title?.localeCompare(b.title ?? '') ?? 0; });
-            console.log("Sidebar: Loaded and sorted WIP items:", loadedItems); // Added console log
+            console.log("Sidebar: Loaded and sorted WIP items:", loadedItems);
             setWipItems(loadedItems);
         } catch (err) {
             console.error("Sidebar: Error loading WIP items:", err);
             setWipError("Error al cargar tareas en progreso.");
         } finally {
             setIsLoadingWip(false);
-            console.log("Sidebar: Finished loading WIP items."); // Added console log
+            console.log("Sidebar: Finished loading WIP items.");
         }
     }, []);
 
@@ -96,18 +95,17 @@ function Sidebar() {
       };
 
     return (
-        // Re-enabled motion.aside with variants
         <motion.aside
-            className="space-y-8 lg:sticky lg:top-24" // Consider revisiting sticky if needed
+            className="space-y-8 lg:sticky lg:top-24"
             variants={sidebarVariants}
             initial="hidden"
             animate="visible"
         >
 
             {/* --- Support Section (unchanged) --- */}
-            {/* Re-enabled motion.div with variants */}
             <motion.div variants={widgetVariants} className="bg-gradient-to-br from-gray-800 to-gray-800/80 rounded-xl p-5 border border-gray-700/50 shadow-lg">
-                <h3 className="text-lg font-semibold mb-4 text-white border-b border-gray-600/50 pb-2">Apoya Shiro Nexus</h3>
+                {/* ... content unchanged ... */}
+                 <h3 className="text-lg font-semibold mb-4 text-white border-b border-gray-600/50 pb-2">Apoya Shiro Nexus</h3>
                 <p className="text-sm text-gray-300 mb-4">
                     Tu apoyo nos ayuda a mantener el sitio activo. ¡Gracias!
                 </p>
@@ -155,7 +153,6 @@ function Sidebar() {
 
 
             {/* --- "Trabajando Actualmente" Widget --- */}
-            {/* Re-enabled motion.div with variants */}
             <motion.div variants={widgetVariants} className="bg-gray-800/70 rounded-xl border border-gray-700/50 shadow-lg overflow-hidden">
                  <h3 className="text-xl font-semibold text-white border-b border-gray-600 px-6 py-4">Trabajando Actualmente</h3>
                  {isLoadingWip ? (
@@ -168,12 +165,10 @@ function Sidebar() {
                             <li key={item.id} className="group">
                                 {item.link ? (
                                     <Link to={item.link} className="block hover:bg-gray-700/40 transition-colors duration-150">
-                                        {/* Pass item and getStatusColor to the helper */}
                                         <WipItemContent item={item} getStatusColor={getStatusColor} />
                                     </Link>
                                 ) : (
                                     <div className="block">
-                                        {/* Pass item and getStatusColor to the helper */}
                                         <WipItemContent item={item} getStatusColor={getStatusColor} />
                                     </div>
                                 )}
@@ -194,44 +189,40 @@ function Sidebar() {
 // --- Helper component WipItemContent ---
 const WipItemContent: React.FC<{item: WipItemData, getStatusColor: (status?: string) => string}> = ({ item, getStatusColor }) => {
 
-    // --- ADDED: Determine object-fit class based on item.image_fit ---
-    let imageFitClass = 'object-cover'; // Default value is 'cover'
-    if (item.image_fit === 'contain') {
-        imageFitClass = 'object-contain'; // Use 'contain' if specified
-    } else if (item.image_fit === 'fill') {
-        imageFitClass = 'object-fill'; // Use 'fill' if specified
-    }
-    // If image_fit is 'cover' or undefined/invalid, the default 'object-cover' will be used.
-    // --- END ADDED ---
+    // --- CHANGED: Logic for image positioning ---
+    // We still use object-cover by default to ensure the image covers the area
+    const imageFitClass = 'object-cover';
+    // Prepare the style object, applying objectPosition if provided in CMS
+    const imageStyle: React.CSSProperties = {
+        objectPosition: item.image_position || 'center center' // Default to center if not provided
+    };
+    // --- END CHANGED ---
 
     return (
         <div className="flex flex-col">
             {item.image ? (
-                // --- MODIFIED: Added dynamic imageFitClass ---
+                // --- MODIFIED: Apply object-cover class AND dynamic style for object-position ---
                 <img
                     src={item.image}
-                    alt="" // Alt text could be improved, e.g., using item.title
-                    // Apply the dynamic class here along with existing classes
-                    className={`w-full h-32 ${imageFitClass}`} // Apply object-fit class
+                    alt={item.title || "Imagen WIP"} // Added alt text
+                    className={`w-full h-32 ${imageFitClass}`} // Keep object-cover (or another fit if needed)
+                    style={imageStyle} // Apply dynamic object-position
                     loading="lazy"
                     onError={(e) => {
-                        // Hides the image element if it fails to load
                         (e.target as HTMLImageElement).style.display='none';
-                        // Optionally, you could show a placeholder here instead
                     }}
                 />
              ) : (
-                // Placeholder for items without an image
                 <div className="w-full h-32 bg-gray-700 flex items-center justify-center">
                     <span className="text-gray-500 text-xs italic">Sin imagen</span>
                 </div>
              )}
-            {/* Details section below the image */}
+            {/* Details section below the image (unchanged) */}
             <div className="p-4">
+                {/* ... content unchanged ... */}
                 <p className="text-sm font-semibold text-gray-100 group-hover:text-cyan-300 transition-colors mb-1 truncate" title={item.title}>
-                    {item.title || "Sin Título"} {/* Provide default title */}
+                    {item.title || "Sin Título"}
                 </p>
-                {/* Progress bar */}
                 {typeof item.progress === 'number' && item.progress >= 0 && (
                     <div className="w-full bg-gray-600 rounded-full h-1.5 my-1.5 overflow-hidden" title={`Progreso: ${item.progress}%`}>
                         <div
@@ -240,7 +231,6 @@ const WipItemContent: React.FC<{item: WipItemData, getStatusColor: (status?: str
                         ></div>
                     </div>
                  )}
-                 {/* Status text */}
                 {item.wip_status && (
                     <p className={`text-xs font-medium ${getStatusColor(item.wip_status)}`}>
                         {item.wip_status} {typeof item.progress === 'number' ? `(${item.progress}%)` : ''}

@@ -55,17 +55,13 @@ collections:
     fields:
       - { label: "Título / Nombre Tarea", name: "title", widget: "string", hint: "Ej: Manga XYZ - Cap 11, Anime ABC - Ep 05" }
       - { label: "Imagen", name: "image", widget: "image", required: false }
-      # --- NUEVO CAMPO PARA AJUSTE DE IMAGEN ---
-      - label: "Ajuste de Imagen"
-        name: "image_fit"
-        widget: "select"
-        options:
-          - { label: "Cubrir (Recortar si es necesario)", value: "cover" }
-          - { label: "Contener (Mostrar completa, puede dejar espacios)", value: "contain" }
-          - { label: "Rellenar (Estirar para encajar)", value: "fill" }
-        default: "cover"
+      # --- NUEVO CAMPO PARA POSICIÓN DE IMAGEN ---
+      - label: "Posición de Imagen (CSS object-position)"
+        name: "image_position"
+        widget: "string"
         required: false
-        hint: "Elige cómo se mostrará la imagen si sus dimensiones no coinciden con el espacio disponible. 'Cubrir' es el comportamiento por defecto."
+        default: "center center" # Valor por defecto (centrado)
+        hint: "Define qué parte de la imagen se muestra. Usa valores CSS como 'center top', 'left bottom', '50% 25%', etc. Si se deja vacío, se centrará."
       # --- FIN NUEVO CAMPO ---
       - { label: "Estado del Paso Actual", name: "wip_status", widget: "select", options: ["Traduciendo", "Editando", "Corrigiendo", "Q.C.", "Encoding", "Subiendo", "Otro"], required: false }
       - { label: "Progreso (%)", name: "progress", widget: "number", required: false, value_type: "int", min: 0, max: 100, step: 5, hint: "Porcentaje de completado de esta tarea específica (0-100)." }
