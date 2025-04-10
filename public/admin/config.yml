@@ -55,13 +55,15 @@ collections:
     fields:
       - { label: "Título / Nombre Tarea", name: "title", widget: "string", hint: "Ej: Manga XYZ - Cap 11, Anime ABC - Ep 05" }
       - { label: "Imagen", name: "image", widget: "image", required: false }
-      # --- CAMPO MODIFICADO: Selector para Posición de Imagen ---
       - label: "Posición de la Imagen (Punto Focal)"
-        name: "image_position_select" # Cambiado el nombre
-        widget: "select" # Cambiado a select
+        name: "image_position_select"
+        widget: "select"
         options: # Opciones predefinidas
           - { label: "Centro", value: "center center" }
           - { label: "Arriba", value: "center top" }
+          # --- NUEVA OPCIÓN ---
+          - { label: "Centro-Arriba", value: "center 25%" } # Posición entre centro y arriba
+          # --- FIN NUEVA OPCIÓN ---
           - { label: "Abajo", value: "center bottom" }
           - { label: "Izquierda", value: "left center" }
           - { label: "Derecha", value: "right center" }
@@ -72,7 +74,6 @@ collections:
         default: "center center" # Valor por defecto
         required: false
         hint: "Define qué parte de la imagen se prioriza al mostrarla. 'Centro' es el valor por defecto."
-      # --- FIN CAMPO MODIFICADO ---
       - { label: "Estado del Paso Actual", name: "wip_status", widget: "select", options: ["Traduciendo", "Editando", "Corrigiendo", "Q.C.", "Encoding", "Subiendo", "Otro"], required: false }
       - { label: "Progreso (%)", name: "progress", widget: "number", required: false, value_type: "int", min: 0, max: 100, step: 5, hint: "Porcentaje de completado de esta tarea específica (0-100)." }
       - { label: "Enlace (Opcional)", name: "link", widget: "string", required: false, hint: "Enlace a la página de la traducción principal si aplica (ej: /traducciones/manga-xyz)" }
