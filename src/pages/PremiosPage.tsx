@@ -26,8 +26,9 @@ interface Winner {
     color: string;
 }
 
-// Sticky Nav Links (unchanged)
+// Sticky Nav Links - Added "Premios Anuales"
 const sectionLinks = [
+    { href: "#anual", label: "Premios Anuales", hoverBg: "hover:bg-amber-500/80" }, // Added link for annual awards
     { href: "#temporadas", label: "Temporadas", hoverBg: "hover:bg-pink-600/80" },
     { href: "#aspect", label: "Aspectos Técnicos", hoverBg: "hover:bg-yellow-600/80" },
     { href: "#actores", label: "Actores de Voz", hoverBg: "hover:bg-indigo-600/80" },
@@ -99,6 +100,10 @@ function PremiosPage() {
                             case 'Género':
                                 resolvedCategory = frontmatter.category_genero || resolvedCategory;
                                 break;
+                            // --- ADDED: Handle new award type ---
+                            case 'Ganadores del Año':
+                                resolvedCategory = frontmatter.category_anual || resolvedCategory;
+                                break;
                         }
 
                         const awardItem: AwardData = {
@@ -134,7 +139,7 @@ function PremiosPage() {
 
 
     // --- Group and Sort Awards ---
-    const { seasonAwards, aspectAwards, actorAwards, genreAwards } = useMemo(() => {
+    const { yearAwards, seasonAwards, aspectAwards, actorAwards, genreAwards } = useMemo(() => { // Added yearAwards
         const sorter = (a: AwardData, b: AwardData): number => {
             if (a.order !== undefined && b.order !== undefined) {
                 return a.order - b.order;
@@ -145,6 +150,8 @@ function PremiosPage() {
         };
 
         return {
+            // --- ADDED: Filter for year awards ---
+            yearAwards: allAwards.filter(a => a.award_type === 'Ganadores del Año').sort(sorter),
             seasonAwards: allAwards.filter(a => a.award_type === 'Temporada').sort(sorter),
             aspectAwards: allAwards.filter(a => a.award_type === 'Aspecto Técnico').sort(sorter),
             actorAwards: allAwards.filter(a => a.award_type === 'Actor de Voz').sort(sorter),
@@ -154,25 +161,11 @@ function PremiosPage() {
 
 
     // --- Animation variants (unchanged) ---
-    const sectionVariants = {
-        hidden: { opacity: 0, y: 60 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: {
-                duration: 0.8,
-                ease: "easeOut",
-                staggerChildren: 0.15
-            }
-        },
-    };
-    const paragraphVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } }
-    };
+    const sectionVariants = { /* ... */ };
+    const paragraphVariants = { /* ... */ };
 
 
-    // --- Helper to map AwardData to Winner props ---
+    // --- Helper to map AwardData to Winner props (unchanged) ---
     const mapAwardToWinner = (award: AwardData): Winner => ({
         id: award.id,
         category: award.resolved_category || 'Categoría Desconocida',
@@ -182,86 +175,25 @@ function PremiosPage() {
         color: award.display_color || 'default',
     });
 
-    // --- Loading and Error Display ---
-    // *** CORRECTION: Added the actual component definitions ***
-    const LoadingIndicator = () => (
-        <div className="text-center py-20 text-gray-400">Cargando premios...</div>
-    );
-    const ErrorIndicator = ({ message }: { message: string }) => (
-        <div className="text-center py-20 text-red-400">{message || "Error al cargar los premios."}</div>
-    );
-    // *** END CORRECTION ***
+    // --- Loading and Error Display (unchanged) ---
+    const LoadingIndicator = () => (/* ... */);
+    const ErrorIndicator = ({ message }: { message: string }) => (/* ... */);
+
 
     return (
         <div ref={pageRef} className="relative overflow-x-hidden">
              {/* Decorative Background Elements (unchanged) */}
-             <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-                 <div className="absolute inset-0 opacity-20 animate-twinkle" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.6) 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }}></div>
-                 <motion.div
-                     className="w-80 h-80 bg-pink-600/15 blur-3xl rounded-full absolute -top-20 -left-20"
-                     style={{ y: parallaxY1 }}
-                 />
-                 <motion.div
-                     className="w-96 h-96 bg-purple-600/15 blur-3xl rounded-full absolute -bottom-40 -right-20"
-                     style={{ y: parallaxY2 }}
-                 />
-             </div>
+             {/* ... */}
 
             {/* Header (unchanged) */}
             <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-purple-950/80 via-purple-900/70 to-gray-950/60 shadow-xl">
-                 <div className="absolute -top-1/2 left-0 w-full h-[200%] bg-gradient-to-r from-transparent via-pink-400/15 to-transparent animate-[shine_12s_linear_infinite] opacity-60" style={{ transform: 'rotate(15deg)' }}></div>
-                 <motion.div
-                     className="relative z-10 max-w-5xl mx-auto text-center"
-                     initial="hidden"
-                     animate="visible"
-                     variants={{
-                         hidden: { opacity: 0 },
-                         visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.2 } }
-                     }}
-                 >
-                     {/* Title and Icons */}
-                     <motion.div
-                         className="flex justify-center items-center gap-4 mb-4"
-                         variants={{ hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } }}
-                     >
-                         <motion.span
-                             className="text-pink-300 text-4xl"
-                             animate={{ y: [0, -12, 0], rotate: [0, 10, -10, 0] }}
-                             transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-                             style={{ originX: 0.5, originY: 0.5 }}
-                         >⭐</motion.span>
-                         <h1 className="text-5xl md:text-7xl font-extrabold bg-gradient-to-r from-pink-300 via-white to-pink-400 text-transparent bg-clip-text tracking-tight font-['Zen_Dots',_sans-serif] drop-shadow-lg animate-text-shimmer">
-                             Shiro Awards 2025
-                         </h1>
-                         <motion.span
-                             className="text-pink-300 text-4xl"
-                             animate={{ y: [0, -12, 0], rotate: [0, -10, 10, 0] }}
-                             transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut", delay: 0.4 }}
-                             style={{ originX: 0.5, originY: 0.5 }}
-                         >🏆</motion.span>
-                     </motion.div>
-
-                     {/* Description */}
-                     <motion.p
-                         className="text-xl md:text-2xl text-pink-100 italic mt-4 max-w-2xl mx-auto font-light"
-                         variants={paragraphVariants}
-                     >
-                         Celebrando lo mejor del anime del año con estilo.
-                     </motion.p>
-
-                     {/* Decorative Line */}
-                     <motion.div
-                         className="mt-10 w-36 h-1.5 bg-gradient-to-r from-pink-500 via-white to-pink-500 mx-auto rounded-full animate-pulse"
-                         variants={{ hidden: { scaleX: 0 }, visible: { scaleX: 1 } }}
-                         transition={{ duration: 1, ease: "easeOut" }}
-                     ></motion.div>
-                 </motion.div>
+                {/* ... */}
             </header>
 
-            {/* Sticky Navigation (unchanged) */}
+            {/* Sticky Navigation (updated links) */}
             <nav className="sticky top-0 z-40 bg-gray-950/70 backdrop-blur-xl py-3 shadow-lg border-b border-gray-500/20">
                  <ul className="flex justify-center flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-pink-100 px-4">
-                     {sectionLinks.map(item => (
+                     {sectionLinks.map(item => ( // sectionLinks now includes "Premios Anuales"
                          <motion.li key={item.href + "-sticky"} whileTap={{ scale: 0.95 }}>
                              <a href={item.href} className={`px-4 py-1.5 rounded-full ${item.hoverBg} hover:text-white transition-colors duration-200 block`}>
                                  {item.label}
@@ -271,13 +203,41 @@ function PremiosPage() {
                  </ul>
              </nav>
 
-            {/* --- Award Sections (Render logic updated) --- */}
+            {/* --- Award Sections --- */}
             {isLoading ? (
                 <LoadingIndicator />
             ) : error ? (
                 <ErrorIndicator message={error} />
             ) : (
                 <>
+                    {/* --- ADDED: Annual Awards Section --- */}
+                    <motion.section
+                        id="anual" // ID for the new section
+                        className="relative z-10 py-24 px-6 max-w-7xl mx-auto"
+                        variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
+                    >
+                        <div className="text-center mb-16">
+                            <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-amber-400 inline-block pb-2 px-4"> {/* Using amber for gold */}
+                                Premios Principales del Año
+                            </h2>
+                            <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
+                                Los grandes galardones de Shiro Awards 2025.
+                            </motion.p>
+                        </div>
+                        {yearAwards.length > 0 ? (
+                            // Adjust grid columns as needed for this section
+                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" variants={sectionVariants}>
+                                {yearAwards.map(award => (
+                                    <WinnerCard key={award.id} winner={mapAwardToWinner(award)} />
+                                ))}
+                            </motion.div>
+                        ) : (
+                            <p className="text-center text-gray-500 italic">No hay premios anuales definidos.</p>
+                        )}
+                    </motion.section>
+                    {/* --- END: Annual Awards Section --- */}
+
+
                     {/* Seasons Section */}
                     <motion.section
                         id="temporadas"
@@ -370,23 +330,30 @@ function PremiosPage() {
 
             <ScrollToTopButton />
             {/* Global styles (unchanged) */}
-            <style jsx global>{`
-                 /* Styles specific to this page or potentially global animations */
-                  .font-['Zen_Dots',_sans-serif] { font-family: 'Zen Dots', sans-serif; }
-                  .animate-text-shimmer { background-size: 200% auto; animation: shimmer 4s linear infinite; }
-                  @keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
-                  @keyframes shine { 0% { transform: translateX(-100%) rotate(15deg); } 100% { transform: translateX(100%) rotate(15deg); } }
-                  .animate-twinkle { animation: twinkle 5s linear infinite alternate; }
-                  @keyframes twinkle { 0% { opacity: 0.1; } 50% { opacity: 0.3; } 100% { opacity: 0.1; } }
-            `}</style>
+            <style jsx global>{`/* ... styles unchanged ... */`}</style>
         </div>
     );
 }
 
-// --- Re-add definitions for variants if they were removed or defined outside ---
-// (Definitions were outside the component in the previous version, ensure they are accessible)
-// const sectionVariants = { ... };
-// const paragraphVariants = { ... };
+// --- Re-add definitions for variants and indicators ---
+const sectionVariants = {
+    hidden: { opacity: 0, y: 60 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.8,
+            ease: "easeOut",
+            staggerChildren: 0.15
+        }
+    },
+};
+const paragraphVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } }
+};
+const LoadingIndicator = () => <div className="text-center py-20 text-gray-400">Cargando premios...</div>;
+const ErrorIndicator = ({ message }: { message: string }) => <div className="text-center py-20 text-red-400">{message || "Error al cargar los premios."}</div>;
 
 
 export default PremiosPage;

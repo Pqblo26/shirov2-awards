@@ -8,14 +8,14 @@ interface Winner {
     image: string;
     name: string;
     extra?: string;
-    color: string; // Consider using a specific literal type ('pink' | 'yellow' | ...)
+    color: string; // e.g., 'pink', 'yellow', 'gold', 'default'
 }
 
 interface WinnerCardProps {
     winner: Winner;
 }
 
-// Color styles definition (could also be moved to a separate file/theme config)
+// Color styles definition - Added 'gold' using amber colors
 const colorStyles: { [key: string]: any } = { // Use a more specific type if possible
     pink: { border: 'border-pink-500', hoverShadow: 'hover:shadow-[0_0_25px_5px_rgba(236,72,153,0.5)]', ring: 'hover:ring-pink-400/60', text: 'text-pink-400', bg: 'bg-pink-600', hoverBg: 'hover:bg-pink-500', buttonBg: 'bg-pink-600', buttonHoverBg: 'hover:bg-pink-500' },
     yellow: { border: 'border-yellow-500', hoverShadow: 'hover:shadow-[0_0_25px_5px_rgba(234,179,8,0.5)]', ring: 'hover:ring-yellow-400/60', text: 'text-yellow-400', bg: 'bg-yellow-600', hoverBg: 'hover:bg-yellow-500', buttonBg: 'bg-yellow-600', buttonHoverBg: 'hover:bg-yellow-500' },
@@ -23,19 +23,25 @@ const colorStyles: { [key: string]: any } = { // Use a more specific type if pos
     red: { border: 'border-red-500', hoverShadow: 'hover:shadow-[0_0_25px_5px_rgba(239,68,68,0.5)]', ring: 'hover:ring-red-400/60', text: 'text-red-400', bg: 'bg-red-600', hoverBg: 'hover:bg-red-500', buttonBg: 'bg-red-600', buttonHoverBg: 'hover:bg-red-500' },
     blue: { border: 'border-blue-500', hoverShadow: 'hover:shadow-[0_0_25px_5px_rgba(59,130,246,0.5)]', ring: 'hover:ring-blue-400/60', text: 'text-blue-400', bg: 'bg-blue-600', hoverBg: 'hover:bg-blue-500', buttonBg: 'bg-blue-600', buttonHoverBg: 'hover:bg-blue-500' },
     orange: { border: 'border-orange-500', hoverShadow: 'hover:shadow-[0_0_25px_5px_rgba(249,115,22,0.5)]', ring: 'hover:ring-orange-400/60', text: 'text-orange-400', bg: 'bg-orange-600', hoverBg: 'hover:bg-orange-500', buttonBg: 'bg-orange-600', buttonHoverBg: 'hover:bg-orange-500' },
+    // --- ADDED: Gold style using amber ---
+    gold: { border: 'border-amber-400', hoverShadow: 'hover:shadow-[0_0_25px_5px_rgba(245,158,11,0.5)]', ring: 'hover:ring-amber-300/60', text: 'text-amber-300', bg: 'bg-amber-600', hoverBg: 'hover:bg-amber-500', buttonBg: 'bg-amber-600', buttonHoverBg: 'hover:bg-amber-500' },
+    // --- END ADDED ---
     default: { border: 'border-gray-700', hoverShadow: 'hover:shadow-gray-500/30', ring: 'hover:ring-gray-500/40', text: 'text-gray-300', bg: 'bg-gray-600', hoverBg: 'hover:bg-gray-500', buttonBg: 'bg-gray-600', buttonHoverBg: 'hover:bg-gray-500' }
 };
 
 
 const WinnerCard: React.FC<WinnerCardProps> = ({ winner }) => {
+    // Use selected color or default if color is missing or not found
     const styles = colorStyles[winner.color] || colorStyles.default;
 
     const handleInfoClick = () => {
         console.log(`Mostrar info de: ${winner.name}`);
-        // Modal Logic Placeholder
+        // Placeholder for future modal logic
+        // You could use state in PremiosPage to control a modal
+        // and pass down a function to WinnerCard to open it with winner data.
     };
 
-    // Variants for staggering animation (can be defined here or passed as props)
+    // Variants for staggering animation
     const cardVariants = {
         hidden: { opacity: 0, y: 50, scale: 0.9 },
         visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } }
@@ -44,8 +50,7 @@ const WinnerCard: React.FC<WinnerCardProps> = ({ winner }) => {
     return (
         <motion.div
             className={`relative group bg-gradient-to-br from-gray-800 to-gray-900 p-5 rounded-2xl shadow-xl border ${styles.border} transition-all duration-300 text-center hover:ring-2 ${styles.ring} ${styles.hoverShadow} hover:-translate-y-2 flex flex-col`}
-            variants={cardVariants} // Use variants for animation within parent stagger
-            // Removed initial/animate from here, handled by parent stagger in page component
+            variants={cardVariants} // Animation handled by parent stagger in PremiosPage
             whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
         >
             {/* Card Content */}
@@ -55,10 +60,10 @@ const WinnerCard: React.FC<WinnerCardProps> = ({ winner }) => {
                     <motion.img
                         src={winner.image}
                         alt={`Ganador: ${winner.name}`}
-                        className="w-full h-60 object-cover"
+                        className="w-full h-60 object-cover" // Default object-cover
                         onError={(e) => {
-                            const target = e.target as HTMLImageElement; // Type assertion
-                            target.onerror = null;
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null; // Prevent infinite loop if placeholder fails
                             target.src = "https://placehold.co/400x600/7F1D1D/FECACA?text=Error+Imagen";
                             target.alt = "Error al cargar la imagen";
                         }}

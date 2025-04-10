@@ -11,6 +11,7 @@ public_folder: "/images/uploads"
 # Configuración de Colecciones
 collections:
   # --- Colección para las Traducciones ---
+  # ... (definición de la colección traducciones sin cambios) ...
   - name: "traducciones"
     label: "Traducciones (General)"
     label_singular: "Traducción"
@@ -24,7 +25,7 @@ collections:
       - { label: "Tags (Adicionales)", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false, hint: "Tags extra aparte de estado, categoría, formato, etc." }
       - { label: "Estado (General)", name: "status", widget: "select", options: ["En Progreso", "Finalizado", "Pausado", "Cancelado", "Próximamente"], required: false }
       - { label: "Categoría Principal", name: "mainCategory", widget: "select", options: ["Anime", "Donghua", "Otros"], required: false }
-      - { label: "Formato (TV/Película/OVA...)", name: "format_select", widget: "select", options: ["TV", "OVA", "Especial", "Película", "Otro"], required: false } # Nota: TV Short se maneja en el código, no necesita estar aquí si no es un valor directo del CMS
+      - { label: "Formato (TV/Película/OVA...)", name: "format_select", widget: "select", options: ["TV", "OVA", "Especial", "Película", "Otro"], required: false }
       - { label: "Especificar Otro Formato", name: "format_other", widget: "string", required: false, condition: { field: "format_select", value: "Otro" } }
       - { label: "Especificaciones (MKV/MP4...)", name: "specification_select", widget: "select", options: ["MKV", "MP4", "AVI", "Otro"], required: false }
       - { label: "Especificar Otra Especificación", name: "specification_other", widget: "string", required: false, condition: { field: "specification_select", value: "Otro" } }
@@ -36,7 +37,7 @@ collections:
       - { label: "Especificar Otro Codec Video", name: "videoCodec_other", widget: "string", required: false, condition: { field: "videoCodec_select", value: "Otro" } }
       - label: "Episodios"
         name: "episodeCount"
-        widget: "string" # Usamos string para flexibilidad (ej: 12, 24+OVA, Película)
+        widget: "string"
         required: false
         hint: "Ej: 12, 24 + OVA, Película, En emisión"
       - { label: "Sinopsis / Extracto Corto", name: "excerpt", widget: "text", required: false }
@@ -45,6 +46,7 @@ collections:
       - { label: "Contenido Principal (Markdown)", name: "body", widget: "markdown", required: false }
 
   # --- Colección WIP Items ---
+  # ... (definición de la colección wip_items sin cambios) ...
   - name: "wip_items"
     label: "Trabajando Actualmente (Widget)"
     label_singular: "Elemento WIP"
@@ -58,12 +60,10 @@ collections:
       - label: "Posición de la Imagen (Punto Focal)"
         name: "image_position_select"
         widget: "select"
-        options: # Opciones predefinidas
+        options:
           - { label: "Centro", value: "center center" }
           - { label: "Arriba", value: "center top" }
-          # --- NUEVA OPCIÓN ---
-          - { label: "Centro-Arriba", value: "center 25%" } # Posición entre centro y arriba
-          # --- FIN NUEVA OPCIÓN ---
+          - { label: "Centro-Arriba", value: "center 25%" }
           - { label: "Abajo", value: "center bottom" }
           - { label: "Izquierda", value: "left center" }
           - { label: "Derecha", value: "right center" }
@@ -71,7 +71,7 @@ collections:
           - { label: "Esquina Superior Derecha", value: "right top" }
           - { label: "Esquina Inferior Izquierda", value: "left bottom" }
           - { label: "Esquina Inferior Derecha", value: "right bottom" }
-        default: "center center" # Valor por defecto
+        default: "center center"
         required: false
         hint: "Define qué parte de la imagen se prioriza al mostrarla. 'Centro' es el valor por defecto."
       - { label: "Estado del Paso Actual", name: "wip_status", widget: "select", options: ["Traduciendo", "Editando", "Corrigiendo", "Q.C.", "Encoding", "Subiendo", "Otro"], required: false }
@@ -80,8 +80,6 @@ collections:
       - { label: "Orden (Opcional)", name: "order", widget: "number", required: false, value_type: "int", hint: "Número para ordenar manually (menor aparece primero). Si no se usa, se ordenará por defecto." }
       - { label: "Fecha Creación (Automática)", name: "date", widget: "datetime", default: "", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false, hide: true }
 
-# ... (backend, media_folder, y otras colecciones existentes van aquí arriba) ...
-
   # --- COLECCIÓN PREMIOS (Modificada) ---
   - name: "premios"
     label: "Premios Shiro Awards"
@@ -89,64 +87,78 @@ collections:
     folder: "content/premios"
     create: true
     delete: true
-    # --- SLUG MODIFICADO: Usa el nombre del ganador ---
-    slug: "{{fields.winner_name}}"
-    # --- SUMMARY MODIFICADO ---
-    summary: "{{award_type}} - {{winner_name}}" # Muestra tipo y ganador
+    slug: "{{fields.winner_name}}" # Slug usa nombre del ganador
+    summary: "{{award_type}} - {{winner_name}}" # Summary actualizado
     fields:
       - label: "Tipo de Premio"
         name: "award_type"
         widget: "select"
-        options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género"]
+        # --- OPCIÓN AÑADIDA ---
+        options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año"]
         required: true
         hint: "Clasifica el premio para agruparlo y mostrar las categorías correctas."
 
-      # --- CAMPO award_category (string) ELIMINADO ---
-      # - { label: "Categoría del Premio", name: "award_category", widget: "string", ... }
-
-      # --- NUEVOS CAMPOS CONDICIONALES PARA CATEGORÍA ---
+      # --- Campos condicionales para categoría ---
       - label: "Categoría Específica (Temporada)"
         name: "category_temporada"
         widget: "select"
-        condition: { field: "award_type", value: "Temporada" } # Solo se muestra si award_type es Temporada
+        condition: { field: "award_type", value: "Temporada" }
         options:
           - "Mejor Anime de Invierno"
           - "Mejor Anime de Primavera"
           - "Mejor Anime de Verano"
           - "Mejor Anime de Otoño"
-        required: true # Requerido cuando es visible
+        required: true
       - label: "Categoría Específica (Aspecto Técnico)"
         name: "category_aspecto"
         widget: "select"
-        condition: { field: "award_type", value: "Aspecto Técnico" } # Solo se muestra si award_type es Aspecto Técnico
+        condition: { field: "award_type", value: "Aspecto Técnico" }
         options:
           - "Mejor Adaptación"
           - "Mejor Animación"
           - "Mejor Banda Sonora"
           - "Mejor Estudio"
-        required: true # Requerido cuando es visible
+        required: true
       - label: "Categoría Específica (Actor de Voz)"
         name: "category_actor"
         widget: "select"
-        condition: { field: "award_type", value: "Actor de Voz" } # Solo se muestra si award_type es Actor de Voz
+        condition: { field: "award_type", value: "Actor de Voz" }
         options:
           - "Mejor Actor de Voz"
           - "Mejor Actriz de Voz"
-        required: true # Requerido cuando es visible
+        required: true
       - label: "Categoría Específica (Género)"
         name: "category_genero"
         widget: "select"
-        condition: { field: "award_type", value: "Género" } # Solo se muestra si award_type es Género
-        options:
+        condition: { field: "award_type", value: "Género" }
+        options: # --- GÉNEROS AÑADIDOS ---
           - "Acción"
           - "Aventura"
           - "Comedia"
           - "Drama"
           - "Deporte"
           - "Romance"
+          - "SCIFI o Mecha"
+          - "Slice of Life"
+          - "Supernatural"
+          - "Ecchi"
           # Puedes añadir más géneros aquí si los necesitas
-        required: true # Requerido cuando es visible
-      # --- FIN CAMPOS CONDICIONALES ---
+        required: true
+      # --- NUEVO CAMPO CONDICIONAL ---
+      - label: "Categoría Específica (Anual)"
+        name: "category_anual"
+        widget: "select"
+        condition: { field: "award_type", value: "Ganadores del Año" } # Condición para el nuevo tipo
+        options:
+          - "Mejor Anime del Año"
+          - "Mejor Película del Año"
+          - "Mejor Chico"
+          - "Mejor Chica"
+          - "Mejor Pareja"
+          - "Mejor Opening"
+          - "Mejor Ending"
+        required: true
+      # --- FIN NUEVO CAMPO CONDICIONAL ---
 
       - label: "Nombre del Ganador"
         name: "winner_name"
@@ -172,6 +184,8 @@ collections:
           - { label: "Rojo (Temporada Otoño / Género)", value: "red" }
           - { label: "Amarillo (Aspecto Técnico)", value: "yellow" }
           - { label: "Índigo (Actores Voz)", value: "indigo" }
+          # --- NUEVO COLOR AÑADIDO ---
+          - { label: "Dorado (Ganador Año)", value: "gold" } # Color para premios anuales
           - { label: "Gris (Por defecto)", value: "default" }
         required: true
         default: "default"
@@ -180,6 +194,6 @@ collections:
         widget: "number"
         required: false
         value_type: "int"
-        hint: "Número para ordenar manualmente dentro de cada tipo (menor aparece primero)."
+        hint: "Número para ordenar manually (menor aparece primero)."
 
 # ... (resto del archivo config.yml si hubiera algo más) ...
