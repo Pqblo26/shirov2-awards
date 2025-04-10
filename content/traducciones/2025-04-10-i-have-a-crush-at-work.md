@@ -3,6 +3,7 @@ title: I Have a Crush at Work
 date: 2025-04-10T08:12:00.000Z
 imageUrl: https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx179696-1MAqXYVXT7IT.jpg
 status: En Progreso
+mainCategory: Anime
 format_select: TV
 specification_select: MKV
 source_select: ShiroSubs
