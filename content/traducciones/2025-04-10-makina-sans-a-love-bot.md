@@ -10,7 +10,7 @@ specification_select: MKV
 source_select: ShiroSubs
 resolution_select: 1920x1080
 videoCodec_select: H.265/HEVC
-episodeCount: N/A
+episodeCount: 1/N/A
 excerpt: >-
   Esta arriesgada historia de comedia romántica se centra en Eita, un
   introvertido estudiante de instituto mecha otaku que está colado por Makina,
