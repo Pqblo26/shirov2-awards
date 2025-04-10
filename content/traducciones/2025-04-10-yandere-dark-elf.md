@@ -11,7 +11,7 @@ specification_select: MKV
 source_select: ShiroSubs
 resolution_select: 1920x1080
 videoCodec_select: H.265/HEVC
-episodeCount: "12"
+episodeCount: 1/12
 excerpt: >-
   Hinata lo hizo. Se reencarnó en otro mundo, tomó el manto de Héroe y mató al
   temido Señor de los Demonios junto a su grupo de compañeros de aventuras. Como
