@@ -55,14 +55,24 @@ collections:
     fields:
       - { label: "Título / Nombre Tarea", name: "title", widget: "string", hint: "Ej: Manga XYZ - Cap 11, Anime ABC - Ep 05" }
       - { label: "Imagen", name: "image", widget: "image", required: false }
-      # --- NUEVO CAMPO PARA POSICIÓN DE IMAGEN ---
-      - label: "Posición de Imagen (CSS object-position)"
-        name: "image_position"
-        widget: "string"
+      # --- CAMPO MODIFICADO: Selector para Posición de Imagen ---
+      - label: "Posición de la Imagen (Punto Focal)"
+        name: "image_position_select" # Cambiado el nombre
+        widget: "select" # Cambiado a select
+        options: # Opciones predefinidas
+          - { label: "Centro", value: "center center" }
+          - { label: "Arriba", value: "center top" }
+          - { label: "Abajo", value: "center bottom" }
+          - { label: "Izquierda", value: "left center" }
+          - { label: "Derecha", value: "right center" }
+          - { label: "Esquina Superior Izquierda", value: "left top" }
+          - { label: "Esquina Superior Derecha", value: "right top" }
+          - { label: "Esquina Inferior Izquierda", value: "left bottom" }
+          - { label: "Esquina Inferior Derecha", value: "right bottom" }
+        default: "center center" # Valor por defecto
         required: false
-        default: "center center" # Valor por defecto (centrado)
-        hint: "Define qué parte de la imagen se muestra. Usa valores CSS como 'center top', 'left bottom', '50% 25%', etc. Si se deja vacío, se centrará."
-      # --- FIN NUEVO CAMPO ---
+        hint: "Define qué parte de la imagen se prioriza al mostrarla. 'Centro' es el valor por defecto."
+      # --- FIN CAMPO MODIFICADO ---
       - { label: "Estado del Paso Actual", name: "wip_status", widget: "select", options: ["Traduciendo", "Editando", "Corrigiendo", "Q.C.", "Encoding", "Subiendo", "Otro"], required: false }
       - { label: "Progreso (%)", name: "progress", widget: "number", required: false, value_type: "int", min: 0, max: 100, step: 5, hint: "Porcentaje de completado de esta tarea específica (0-100)." }
       - { label: "Enlace (Opcional)", name: "link", widget: "string", required: false, hint: "Enlace a la página de la traducción principal si aplica (ej: /traducciones/manga-xyz)" }

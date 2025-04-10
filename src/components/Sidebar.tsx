@@ -17,8 +17,8 @@ interface WipItemData {
     link?: string;
     order?: number;
     date?: string;
-    // --- CHANGED: Field for image position (string) ---
-    image_position?: string; // e.g., "center top", "50% 25%"
+    // --- CHANGED: Field for image position (selected value) ---
+    image_position_select?: string; // e.g., "center top", "left center"
 }
 
 // --- Updated Sidebar Component ---
@@ -68,8 +68,8 @@ function Sidebar() {
                         link: frontmatter.link,
                         order: frontmatter.order,
                         date: frontmatter.date,
-                        // --- CHANGED: Read image_position from frontmatter ---
-                        image_position: frontmatter.image_position // Read the position string
+                        // --- CHANGED: Read image_position_select from frontmatter ---
+                        image_position_select: frontmatter.image_position_select // Read the selected position value
                     });
                  } catch (parseError) {
                     console.error(`Sidebar: Error parsing WIP item: ${path}`, parseError);
@@ -189,23 +189,23 @@ function Sidebar() {
 // --- Helper component WipItemContent ---
 const WipItemContent: React.FC<{item: WipItemData, getStatusColor: (status?: string) => string}> = ({ item, getStatusColor }) => {
 
-    // --- CHANGED: Logic for image positioning ---
-    // We still use object-cover by default to ensure the image covers the area
-    const imageFitClass = 'object-cover';
-    // Prepare the style object, applying objectPosition if provided in CMS
+    // --- CHANGED: Logic for image positioning using select value ---
+    const imageFitClass = 'object-cover'; // Keep object-cover as the base fit
+    // Prepare the style object, applying objectPosition based on the selected value
     const imageStyle: React.CSSProperties = {
-        objectPosition: item.image_position || 'center center' // Default to center if not provided
+        // Use the value from CMS directly, default to 'center center' if not set
+        objectPosition: item.image_position_select || 'center center'
     };
     // --- END CHANGED ---
 
     return (
         <div className="flex flex-col">
             {item.image ? (
-                // --- MODIFIED: Apply object-cover class AND dynamic style for object-position ---
+                // Apply object-cover class AND dynamic style for object-position
                 <img
                     src={item.image}
-                    alt={item.title || "Imagen WIP"} // Added alt text
-                    className={`w-full h-32 ${imageFitClass}`} // Keep object-cover (or another fit if needed)
+                    alt={item.title || "Imagen WIP"}
+                    className={`w-full h-32 ${imageFitClass}`} // Apply object-fit (e.g., cover)
                     style={imageStyle} // Apply dynamic object-position
                     loading="lazy"
                     onError={(e) => {
