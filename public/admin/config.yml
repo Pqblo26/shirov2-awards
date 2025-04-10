@@ -80,7 +80,58 @@ collections:
       - { label: "Orden (Opcional)", name: "order", widget: "number", required: false, value_type: "int", hint: "Número para ordenar manually (menor aparece primero). Si no se usa, se ordenará por defecto." }
       - { label: "Fecha Creación (Automática)", name: "date", widget: "datetime", default: "", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false, hide: true }
 
-  # --- Otras colecciones (ejemplo) ---
-  # - name: "premios"
-  #   label: "Premios"
-  #   ...etc...
+  # --- NUEVA COLECCIÓN: Premios ---
+  - name: "premios"             # Identificador de la colección
+    label: "Premios Shiro Awards" # Nombre visible en el CMS
+    label_singular: "Premio"    # Nombre para un solo item
+    folder: "content/premios"   # Carpeta donde se guardarán los archivos .md
+    create: true                # Permitir crear nuevos premios
+    delete: true                # Permitir borrar premios
+    slug: "{{slug}}"            # Usar el título como nombre de archivo (o puedes cambiarlo a {{award_category}}-{{winner_name}})
+    summary: "{{award_type}} - {{award_category}}: {{winner_name}}" # Resumen visible en la lista del CMS
+    fields:                     # Campos para cada premio
+      - label: "Tipo de Premio"
+        name: "award_type"
+        widget: "select"
+        options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género"]
+        required: true
+        hint: "Clasifica el premio para agruparlo en la página."
+      - label: "Categoría del Premio"
+        name: "award_category"
+        widget: "string"
+        required: true
+        hint: "Ej: Mejor Anime de Invierno, Mejor Animación, Acción"
+      - label: "Nombre del Ganador"
+        name: "winner_name"
+        widget: "string"
+        required: true
+        hint: "Ej: Anime Ejemplo Invierno, Nombre Actor/Actriz"
+      - label: "Imagen del Ganador"
+        name: "winner_image"
+        widget: "image"
+        required: false
+      - label: "Información Extra"
+        name: "winner_extra"
+        widget: "string"
+        required: false
+        hint: "Ej: Estudio MAPPA, Personaje Ejemplo"
+      - label: "Color de la Tarjeta"
+        name: "display_color"
+        widget: "select"
+        options: # Asegúrate que estos valores coincidan con las keys en colorStyles de WinnerCard.tsx
+          - { label: "Azul (Temporada Invierno)", value: "blue" }
+          - { label: "Rosa (Temporada Primavera)", value: "pink" }
+          - { label: "Naranja (Temporada Verano)", value: "orange" }
+          - { label: "Rojo (Temporada Otoño / Género)", value: "red" }
+          - { label: "Amarillo (Aspecto Técnico)", value: "yellow" }
+          - { label: "Índigo (Actores Voz)", value: "indigo" }
+          - { label: "Gris (Por defecto)", value: "default" } # Opcional, si quieres un color por defecto
+        required: true
+        default: "default"
+      - label: "Orden (Opcional)"
+        name: "order"
+        widget: "number"
+        required: false
+        value_type: "int"
+        hint: "Número para ordenar manualmente dentro de cada tipo (menor aparece primero)."
+      # Podrías añadir más campos si fueran necesarios, como 'year', 'description', etc.

@@ -10,13 +10,13 @@ import {
 // Import Layout and Page Components
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
-// import PremiosPage from './pages/PremiosPage'; // Comentado en el original
-// import VotacionesPage from './pages/VotacionesPage'; // Comentado en el original
+import PremiosPage from './pages/PremiosPage'; // Import ya presente
+// import VotacionesPage from './pages/VotacionesPage'; // Sigue comentado
 import TraduccionesPage from './pages/TraduccionesPage';
 import SingleTranslationPage from './pages/SingleTranslationPage';
-// import ContactoPage from './pages/ContactoPage'; // Comentado en el original
-// import LoginPage from './pages/LoginPage'; // Comentado en el original
-// import AdminPage from './pages/AdminPage'; // Comentado en el original
+// import ContactoPage from './pages/ContactoPage'; // Sigue comentado
+// import LoginPage from './pages/LoginPage'; // Sigue comentado
+// import AdminPage from './pages/AdminPage'; // Sigue comentado
 import NotFoundPage from './pages/NotFoundPage';
 
 // Importa nuestro componente manual
@@ -24,16 +24,23 @@ import ScrollToTop from './components/ScrollToTop'; // Asume que está en src/co
 
 import './index.css'; // Global styles
 
-// Create the router configuration (sin cambios aquí)
+// Create the router configuration
 const router = createBrowserRouter([
   {
     path: '/',
     element: <MainLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      // --- RUTA HABILITADA ---
+      { path: 'premios', element: <PremiosPage /> },
+      // --- FIN RUTA HABILITADA ---
       { path: 'traducciones', element: <TraduccionesPage /> },
       { path: 'traducciones/:filename', element: <SingleTranslationPage /> },
-      // ... otras rutas comentadas ...
+      // --- Otras rutas siguen comentadas ---
+      // { path: 'votaciones', element: <VotacionesPage /> },
+      // { path: 'contacto', element: <ContactoPage /> },
+      // { path: 'login', element: <LoginPage /> },
+      // { path: 'admin', element: <AdminPage /> },
     ],
   },
   // Catch-all 404 route
@@ -51,8 +58,6 @@ ReactDOM.createRoot(rootElement).render(
        {/* Componente para el scroll manual al cambiar de ruta */}
        <ScrollToTop />
        {/* Componente de React Router para gestionar la restauración del scroll */}
-       {/* Usar una key basada en pathname fuerza a tratar cada página como nueva */}
-       {/* en términos de posición de scroll, similar a scrollTo(0,0) */}
        <ScrollRestoration getKey={(location) => location.pathname} />
     </RouterProvider>
   </React.StrictMode>,
