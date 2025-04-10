@@ -1,7 +1,7 @@
 ---
-title: "My Hero Academia: You’re Next"
-image: https://pbs.twimg.com/media/Gn3JVWSWEAElZnT?format=jpg&name=4096x4096
+title: I Have a Crush at Work - Ep 9
+image: https://cdn.oneesports.gg/cdn-data/2025/01/Anime_IHaveaCrushatWork_Tateishi_Mitsuya-1024x576.jpg
 wip_status: Traduciendo
-progress: 50
-date: 2025-04-07
+progress: 10
+date: 2025-04-10
 ---
