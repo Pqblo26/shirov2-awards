@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 // Import Feather icon from lucide-react
 import { Twitter, Mail, Github, Code, Wind, Database, Feather, Users, ArrowDownCircle } from 'lucide-react'; // Added Users & ArrowDownCircle icons
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // --- Iconos SVG Mejorados ---
 
@@ -202,6 +203,8 @@ function AboutMePage() {
                     </motion.a>
                 </motion.div>
             </motion.section>
+
+            <ScrollToTopButton />
 
         </motion.div>
     );

@@ -15,7 +15,6 @@ import PremiosPage from './pages/PremiosPage';
 import TraduccionesPage from './pages/TraduccionesPage';
 import SingleTranslationPage from './pages/SingleTranslationPage';
 import AboutMePage from './pages/AboutMePage'; // Importar la nueva página
-// import ContactoPage from './pages/ContactoPage'; // Sigue comentado
 // import LoginPage from './pages/LoginPage'; // Sigue comentado
 // import AdminPage from './pages/AdminPage'; // Sigue comentado
 import NotFoundPage from './pages/NotFoundPage';
@@ -40,7 +39,6 @@ const router = createBrowserRouter([
       // --- FIN RUTA AÑADIDA ---
       // --- Otras rutas siguen comentadas ---
       // { path: 'votaciones', element: <VotacionesPage /> },
-      // { path: 'contacto', element: <ContactoPage /> },
       // { path: 'login', element: <LoginPage /> },
       // { path: 'admin', element: <AdminPage /> },
     ],
