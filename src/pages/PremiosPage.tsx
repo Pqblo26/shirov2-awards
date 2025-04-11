@@ -30,7 +30,7 @@ interface Winner {
 
 // Sticky Nav Links - Added "Premios Anuales"
 const sectionLinks = [
-    { href: "#anual", label: "Premios Anuales", hoverBg: "hover:bg-amber-500/80" }, // Added link for annual awards
+    { href: "#anual", label: "Premios Principales", hoverBg: "hover:bg-amber-500/80" }, // Added link for annual awards
     { href: "#temporadas", label: "Temporadas", hoverBg: "hover:bg-pink-600/80" },
     { href: "#aspect", label: "Aspectos Técnicos", hoverBg: "hover:bg-yellow-600/80" },
     { href: "#actores", label: "Actores de Voz", hoverBg: "hover:bg-indigo-600/80" },
