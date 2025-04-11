@@ -10,17 +10,18 @@ import {
 // Import Layout and Page Components
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
-import PremiosPage from './pages/PremiosPage'; // Import ya presente
+import PremiosPage from './pages/PremiosPage';
 // import VotacionesPage from './pages/VotacionesPage'; // Sigue comentado
 import TraduccionesPage from './pages/TraduccionesPage';
 import SingleTranslationPage from './pages/SingleTranslationPage';
+import AboutMePage from './pages/AboutMePage'; // Importar la nueva página
 // import ContactoPage from './pages/ContactoPage'; // Sigue comentado
 // import LoginPage from './pages/LoginPage'; // Sigue comentado
 // import AdminPage from './pages/AdminPage'; // Sigue comentado
 import NotFoundPage from './pages/NotFoundPage';
 
 // Importa nuestro componente manual
-import ScrollToTop from './components/ScrollToTop'; // Asume que está en src/components/
+import ScrollToTop from './components/ScrollToTop';
 
 import './index.css'; // Global styles
 
@@ -31,11 +32,12 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      // --- RUTA HABILITADA ---
       { path: 'premios', element: <PremiosPage /> },
-      // --- FIN RUTA HABILITADA ---
       { path: 'traducciones', element: <TraduccionesPage /> },
       { path: 'traducciones/:filename', element: <SingleTranslationPage /> },
+      // --- RUTA AÑADIDA ---
+      { path: 'sobre-mi', element: <AboutMePage /> },
+      // --- FIN RUTA AÑADIDA ---
       // --- Otras rutas siguen comentadas ---
       // { path: 'votaciones', element: <VotacionesPage /> },
       // { path: 'contacto', element: <ContactoPage /> },
