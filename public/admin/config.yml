@@ -92,7 +92,7 @@ collections:
         name: "award_type"
         widget: "select"
         options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año"]
-        required: true
+        required: false
         hint: "Clasifica el premio para agruparlo y mostrar las categorías correctas."
       # --- Campos condicionales para categoría ---
       - label: "Categoría Específica (Temporada)"
@@ -100,31 +100,31 @@ collections:
         widget: "select"
         condition: { field: "award_type", value: "Temporada" }
         options: ["Mejor Anime de Invierno", "Mejor Anime de Primavera", "Mejor Anime de Verano", "Mejor Anime de Otoño"]
-        required: true
+        required: false
       - label: "Categoría Específica (Aspecto Técnico)"
         name: "category_aspecto"
         widget: "select"
         condition: { field: "award_type", value: "Aspecto Técnico" }
         options: ["Mejor Adaptación", "Mejor Animación", "Mejor Banda Sonora", "Mejor Estudio"]
-        required: true
+        required: false
       - label: "Categoría Específica (Actor de Voz)"
         name: "category_actor"
         widget: "select"
         condition: { field: "award_type", value: "Actor de Voz" }
         options: ["Mejor Actor de Voz", "Mejor Actriz de Voz"]
-        required: true
+        required: false
       - label: "Categoría Específica (Género)"
         name: "category_genero"
         widget: "select"
         condition: { field: "award_type", value: "Género" }
         options: ["Acción", "Aventura", "Comedia", "Drama", "Deporte", "Romance", "SCIFI o Mecha", "Slice of Life", "Supernatural", "Ecchi"]
-        required: true
+        required: false
       - label: "Categoría Específica (Anual)"
         name: "category_anual"
         widget: "select"
         condition: { field: "award_type", value: "Ganadores del Año" }
         options: ["Mejor Anime del Año", "Mejor Película del Año", "Mejor Chico", "Mejor Chica", "Mejor Pareja", "Mejor Opening", "Mejor Ending"]
-        required: true
+        required: false
       # --- Fin Campos condicionales ---
       - label: "Nombre del Ganador"
         name: "winner_name"
