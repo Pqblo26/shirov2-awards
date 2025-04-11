@@ -1,40 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom'; // Import Link for internal navigation
-import { motion } from 'framer-motion'; // Import motion for animations
-import WinnerCard from '../components/WinnerCard'; // Import WinnerCard for previews
-// Import the extracted TranslationPreviewCard component
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import WinnerCard from '../components/WinnerCard'; // Import WinnerCard
 import TranslationPreviewCard from '../components/TranslationPreviewCard';
 import ScrollToTopButton from '../components/ScrollToTopButton';
-import matter from 'gray-matter'; // Import gray-matter to parse markdown
+import matter from 'gray-matter';
 
-// --- Helper function to get display value (copied from TraduccionesPage) ---
+// --- Helper function to get display value (for translations) ---
 const getDisplayValue = (selectValue?: string, otherValue?: string): string | undefined => {
-    if (selectValue === "Otro") {
-        return otherValue || undefined; // Return custom value if "Otro" is selected
-    }
-    return selectValue; // Otherwise return the selected value
+    if (selectValue === "Otro") return otherValue || undefined;
+    return selectValue;
 };
 
-// --- Define structure for the data TranslationPreviewCard expects ---
+// --- Define structure for TranslationPreviewCard data ---
 interface TranslationPreviewData {
-    id: string;
-    title: string;
-    excerpt?: string;
-    link: string;
-    imageUrl?: string;
-    tag?: string; // e.g., Main Category or Status
-    date: string; // Formatted date string
-    source?: string; // Calculated source string
+    id: string; title: string; excerpt?: string; link: string;
+    imageUrl?: string; tag?: string; date: string; source?: string;
 }
 
-// --- Sample Data for Winners (remains the same) ---
-const previewWinners = [
-     { id: "preview-1", category: "Mejor Animación", image: "https://placehold.co/400x600/374151/D1D5DB?text=Animación+Ejemplo", name: "Anime Ejemplo A", extra: "Estudio X", color: "yellow" },
-     { id: "preview-2", category: "Mejor Drama", image: "https://placehold.co/400x600/5A0000/FCA5A5?text=Drama+Ejemplo", name: "Anime Ejemplo B", extra: "Estudio Y", color: "red" },
-];
+// --- Define structure expected by WinnerCard ---
+// (Mirrors the interface in WinnerCard.tsx)
+interface Winner {
+    id: string | number;
+    category: string;
+    image: string;
+    name: string;
+    extra?: string;
+    color: string;
+    info_url?: string; // Added field for link
+}
+
+// --- Define structure for AwardData loaded from CMS ---
+// (Mirrors the structure used in PremiosPage loading logic)
+interface AwardData {
+    id: string; // Filename as ID
+    award_type?: string; // Temporada, Aspecto Técnico, etc.
+    resolved_category?: string; // The actual category name determined from conditional fields
+    winner_name?: string;
+    winner_image?: string;
+    winner_extra?: string;
+    display_color?: string; // blue, pink, yellow, etc.
+    order?: number;
+    info_url?: string; // Campo para el enlace externo
+    // Include conditional category fields temporarily during loading if needed
+    category_temporada?: string;
+    category_aspecto?: string;
+    category_actor?: string;
+    category_genero?: string;
+    category_anual?: string;
+}
 
 // --- Reusable Card Component for Featured Sections ---
-interface FeatureCardProps { icon: React.ReactNode; title: string; description: string; link: string; color: 'pink' | 'blue' | 'green'; }
+// (Complete definition included)
+interface FeatureCardProps {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    link: string;
+    color: 'pink' | 'blue' | 'green';
+}
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, link, color }) => {
     const colorClasses = {
         pink: { hoverShadow: 'hover:shadow-pink-500/30', hoverBorder: 'hover:border-pink-500/50', iconText: 'text-pink-400' },
@@ -62,324 +86,263 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, lin
     );
 };
 
+
 // --- Main HomePage Component ---
 function HomePage() {
-    // State for recent translations, loading, and error
+    // State for recent translations
     const [recentTranslations, setRecentTranslations] = useState<TranslationPreviewData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const numberOfPreviews = 3; // Number of recent translations to show
+    const [isLoadingTranslations, setIsLoadingTranslations] = useState(true);
+    const [errorTranslations, setErrorTranslations] = useState<string | null>(null);
+    const numberOfTranslationPreviews = 3;
 
+    // State for featured winners
+    const [featuredWinners, setFeaturedWinners] = useState<Winner[]>([]);
+    const [isLoadingWinners, setIsLoadingWinners] = useState(true);
+    const [errorWinners, setErrorWinners] = useState<string | null>(null);
+    const numberOfWinnerPreviews = 2; // Show 2 featured winners
+
+    // Effect for Document Title
     useEffect(() => {
         document.title = "Inicio | Shiro Nexus";
+    }, []);
 
+    // Effect for Loading Recent Translations
+    useEffect(() => {
         const loadRecentTranslations = async () => {
-            setIsLoading(true);
-            setError(null);
-            console.log("HomePage: Attempting to load recent translations...");
+             setIsLoadingTranslations(true);
+             setErrorTranslations(null);
+             console.log("HomePage: Attempting to load recent translations...");
+             try {
+                 const modules = import.meta.glob('/content/traducciones/**/*.md', { eager: true, query: '?raw', import: 'default' });
+                 console.log("HomePage: Translation Files found:", modules);
+                 // Use a temporary type to hold raw frontmatter for sorting
+                 const loadedTranslationsData: { id: string; frontmatter: any }[] = [];
+                 if (Object.keys(modules).length === 0) console.warn("HomePage: No translation files found.");
 
+                 for (const path in modules) {
+                     const rawContent = modules[path];
+                     if (typeof rawContent !== 'string') { console.warn(`HomePage: Content is not a string for: ${path}`); continue; }
+                     try {
+                         const { data: frontmatter } = matter(rawContent);
+                         const slugMatch = path.match(/([^/]+)\.md$/);
+                         const filename = slugMatch ? slugMatch[1] : path;
+                         loadedTranslationsData.push({ id: filename, frontmatter });
+                     } catch (parseError) { console.error(`HomePage: Error parsing translation frontmatter for file: ${path}`, parseError); }
+                 }
+                 // Sort by date before slicing
+                 loadedTranslationsData.sort((a, b) => {
+                     const timeA = a.frontmatter?.date ? new Date(a.frontmatter.date).getTime() : 0;
+                     const timeB = b.frontmatter?.date ? new Date(b.frontmatter.date).getTime() : 0;
+                     return timeB - timeA; // Sort descending
+                 });
+                 // Process the top N items for preview
+                 const processedTranslations = loadedTranslationsData.slice(0, numberOfTranslationPreviews).map(item => {
+                     const { id, frontmatter } = item;
+                     const displaySource = getDisplayValue(frontmatter.source_select, frontmatter.source_other);
+                     let formattedDate = "Fecha no disponible";
+                     if (frontmatter.date) { try { formattedDate = new Date(frontmatter.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }); } catch (dateError) { console.error(`HomePage: Error formatting date for ${id}:`, dateError); } }
+                     return {
+                         id: id,
+                         title: frontmatter.title ?? `Sin Título (${id})`,
+                         date: formattedDate,
+                         imageUrl: frontmatter.imageUrl,
+                         tag: frontmatter.mainCategory ?? frontmatter.status ?? 'General',
+                         source: displaySource,
+                         excerpt: frontmatter.excerpt,
+                         link: `/traducciones/${id}`,
+                     };
+                 });
+                 console.log("HomePage: Processed recent translations:", processedTranslations);
+                 setRecentTranslations(processedTranslations);
+             } catch (err) { console.error("HomePage: Error loading translation files:", err); setErrorTranslations("Error al cargar traducciones.");
+             } finally { setIsLoadingTranslations(false); console.log("HomePage: Finished loading translations."); }
+        };
+        loadRecentTranslations();
+    }, []);
+
+    // Effect for Loading Featured Winners
+    useEffect(() => {
+        const loadFeaturedWinners = async () => {
+            setIsLoadingWinners(true);
+            setErrorWinners(null);
+            console.log("HomePage: Attempting to load awards...");
             try {
-                // Import all markdown files from the traducciones content directory
-                const modules = import.meta.glob('/content/traducciones/**/*.md', {
-                    eager: true,
-                    query: '?raw',
-                    import: 'default'
-                });
-                console.log("HomePage: Files found:", modules);
-
-                const loadedTranslations: TranslationPreviewData[] = [];
-                if (Object.keys(modules).length === 0) {
-                    console.warn("HomePage: No translation files found.");
-                }
+                const modules = import.meta.glob('/content/premios/*.md', { eager: true, query: '?raw', import: 'default' });
+                console.log("HomePage: Award Files found:", modules);
+                const loadedWinnersData: AwardData[] = []; // Use the defined AwardData interface
+                 if (Object.keys(modules).length === 0) console.warn("HomePage: No award files found.");
 
                 for (const path in modules) {
                     const rawContent = modules[path];
-                    if (typeof rawContent !== 'string') {
-                        console.warn(`HomePage: Content is not a string for: ${path}`);
-                        continue;
-                    }
+                    if (typeof rawContent !== 'string') { console.warn(`HomePage: Award content is not a string for: ${path}`); continue; }
                     try {
-                        // Parse frontmatter
                         const { data: frontmatter } = matter(rawContent);
-
-                        // Extract filename for ID and link generation
                         const slugMatch = path.match(/([^/]+)\.md$/);
-                        const filename = slugMatch ? slugMatch[1] : path; // Use filename as ID
-
-                        // Get calculated values
-                        const displaySource = getDisplayValue(frontmatter.source_select, frontmatter.source_other);
-
-                        // Format date (example: "9 de abril de 2025")
-                        let formattedDate = "Fecha no disponible";
-                        if (frontmatter.date) {
-                            try {
-                                formattedDate = new Date(frontmatter.date).toLocaleDateString('es-ES', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                });
-                            } catch (dateError) {
-                                console.error(`HomePage: Error formatting date for ${filename}:`, dateError);
-                            }
+                        const filename = slugMatch ? slugMatch[1] : path;
+                        // Resolve category
+                        let resolvedCategory = 'Categoría Desconocida';
+                        switch (frontmatter.award_type) {
+                            case 'Temporada': resolvedCategory = frontmatter.category_temporada || resolvedCategory; break;
+                            case 'Aspecto Técnico': resolvedCategory = frontmatter.category_aspecto || resolvedCategory; break;
+                            case 'Actor de Voz': resolvedCategory = frontmatter.category_actor || resolvedCategory; break;
+                            case 'Género': resolvedCategory = frontmatter.category_genero || resolvedCategory; break;
+                            case 'Ganadores del Año': resolvedCategory = frontmatter.category_anual || resolvedCategory; break;
                         }
-
-
-                        // Create the object for the preview card
-                        const translationItem: TranslationPreviewData = {
-                            id: filename, // Use filename as unique ID
-                            title: frontmatter.title ?? `Sin Título (${filename})`,
-                            date: formattedDate, // Use formatted date
-                            imageUrl: frontmatter.imageUrl,
-                            tag: frontmatter.mainCategory ?? frontmatter.status ?? 'General', // Use main category or status as tag
-                            source: displaySource,
-                            excerpt: frontmatter.excerpt,
-                            link: `/traducciones/${filename}`, // Link to the single translation page
-                        };
-                        loadedTranslations.push(translationItem);
-                    } catch (parseError) {
-                        console.error(`HomePage: Error parsing frontmatter for file: ${path}`, parseError);
-                    }
+                        // Add to temporary list matching AwardData structure
+                        loadedWinnersData.push({
+                            id: filename,
+                            resolved_category: resolvedCategory,
+                            winner_name: frontmatter.winner_name,
+                            winner_image: frontmatter.winner_image,
+                            winner_extra: frontmatter.winner_extra,
+                            display_color: frontmatter.display_color,
+                            info_url: frontmatter.info_url,
+                            award_type: frontmatter.award_type, // Keep for potential future filtering/sorting
+                            order: frontmatter.order, // Keep for potential future sorting
+                        });
+                    } catch (parseError) { console.error(`HomePage: Error parsing award frontmatter for file: ${path}`, parseError); }
                 }
 
-                // Sort translations by original date (descending - newest first)
-                loadedTranslations.sort((a, b) => {
-                    // Find original date strings to sort accurately before formatting
-                    const dateA = Object.entries(modules).find(([path]) => path.includes(a.id))?.[1];
-                    const dateB = Object.entries(modules).find(([path]) => path.includes(b.id))?.[1];
-                    const frontmatterA = dateA ? matter(dateA as string).data : null;
-                    const frontmatterB = dateB ? matter(dateB as string).data : null;
-                    const timeA = frontmatterA?.date ? new Date(frontmatterA.date).getTime() : 0;
-                    const timeB = frontmatterB?.date ? new Date(frontmatterB.date).getTime() : 0;
-                    return timeB - timeA; // Sort descending
-                });
+                // Select featured winners (e.g., first N found, could sort by 'order' later)
+                const featured = loadedWinnersData.slice(0, numberOfWinnerPreviews).map(award => ({
+                    // Map AwardData to Winner interface for WinnerCard
+                    id: award.id,
+                    category: award.resolved_category || 'Categoría Desconocida',
+                    image: award.winner_image || 'https://placehold.co/400x600/7F1D1D/FECACA?text=No+Imagen',
+                    name: award.winner_name || 'Ganador Desconocido',
+                    extra: award.winner_extra,
+                    color: award.display_color || 'default',
+                    info_url: award.info_url,
+                }));
 
-                console.log("HomePage: Sorted translations:", loadedTranslations);
+                console.log("HomePage: Featured winners selected:", featured);
+                setFeaturedWinners(featured);
 
-                // Get the top N recent translations
-                setRecentTranslations(loadedTranslations.slice(0, numberOfPreviews));
-
-            } catch (err) {
-                console.error("HomePage: Error loading translation files:", err);
-                setError("Error al cargar las traducciones recientes.");
-            } finally {
-                setIsLoading(false);
-                console.log("HomePage: Finished loading translations.");
-            }
+            } catch (err) { console.error("HomePage: Error loading award files:", err); setErrorWinners("Error al cargar premios destacados.");
+            } finally { setIsLoadingWinners(false); console.log("HomePage: Finished loading awards."); }
         };
+        loadFeaturedWinners();
+    }, []);
 
-        loadRecentTranslations();
 
-    }, []); // Empty dependency array ensures this runs only once on mount
+    // --- Animation Variants ---
+    const sectionVariants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut", staggerChildren: 0.2 } }
+    };
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20, scale: 0.98 },
+        visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } }
+    };
 
-    // --- Animation Variants (remain the same) ---
-    const sectionVariants = { hidden: { opacity: 0, y: 50 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut", staggerChildren: 0.2 } } };
-    const itemVariants = { hidden: { opacity: 0, y: 20, scale: 0.98 }, visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } } };
-
-    // --- Simple Loading Spinner ---
-    const LoadingSpinner = () => (
+    // --- Loading/Error Indicators ---
+    const LoadingSpinner = ({ text = "Cargando..." }: { text?: string }) => (
         <div className="flex justify-center items-center py-10">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-8 h-8 border-4 border-t-green-500 border-r-green-500/30 border-b-green-500/30 border-l-green-500/30 rounded-full"
-            ></motion.div>
-            <p className="ml-3 text-gray-400">Cargando traducciones...</p>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-6 h-6 border-4 border-t-gray-500 border-r-gray-500/30 border-b-gray-500/30 border-l-gray-500/30 rounded-full"></motion.div>
+            <p className="ml-3 text-gray-400">{text}</p>
         </div>
     );
-
-    // --- Error Message Display ---
-    const ErrorDisplay = ({ message }: { message: string }) => (
-         <div className="text-center text-red-400 py-10 px-6 bg-red-900/20 rounded-lg border border-dashed border-red-700/50">
-            <p>{message}</p>
-        </div>
+    const ErrorDisplay = ({ message }: { message: string | null }) => ( // Allow null message
+         <div className="text-center text-red-400 py-10 px-6 bg-red-900/20 rounded-lg border border-dashed border-red-700/50"> <p>{message || "Ocurrió un error."}</p> </div>
     );
-
-     // --- No Translations Message ---
-     const NoTranslationsMessage = () => (
-        <div className="text-center text-gray-500 py-10 px-6 bg-gray-800/30 rounded-lg border border-dashed border-gray-700">
-            <p>No hay traducciones recientes para mostrar.</p>
-        </div>
+    const NoDataMessage = ({ message }: { message: string }) => (
+        <div className="text-center text-gray-500 py-10 px-6 bg-gray-800/30 rounded-lg border border-dashed border-gray-700"> <p>{message}</p> </div>
     );
 
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            {/* === Hero Section === (unchanged) */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }} >
+            {/* === Hero Section === (Complete) */}
             <section className="relative text-white pt-28 pb-20 md:pt-40 md:pb-28 px-6 text-center overflow-hidden isolate">
-                {/* Background elements */}
                  <motion.div className="absolute inset-0 z-[-2] overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }} >
                      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-950 to-black"></div>
                      <motion.div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-gradient-radial from-pink-500/20 via-transparent to-transparent rounded-full filter blur-3xl" animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15], x: ['-10%', '0%', '-10%'], y: ['-20%', '-10%', '-20%'] }} transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }} />
-                     <motion.div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-gradient-radial from-blue-600/20 via-transparent to-transparent rounded-full filter blur-3xl" animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.1, 0.2], x: ['-10%', '-20%', '-10%'], y: ['-20%', '-30%', '-20%'] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
+                      <motion.div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-gradient-radial from-blue-600/20 via-transparent to-transparent rounded-full filter blur-3xl" animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.1, 0.2], x: ['-10%', '-20%', '-10%'], y: ['-20%', '-30%', '-20%'] }} transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
                  </motion.div>
                  <motion.div className="absolute inset-0 z-[-1] flex justify-center items-end pointer-events-none" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.3 }} >
                      <img src="https://placehold.co/400x600/ffffff/cccccc?text=Personaje+(PNG)" alt="Personaje Principal" className="max-h-[80vh] md:max-h-[70vh] w-auto object-contain opacity-15 lg:opacity-20" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                  </motion.div>
-                 {/* Hero content */}
-                <motion.div
-                    className="relative z-10"
-                    variants={sectionVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    <motion.h1 variants={itemVariants} className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-pink-300 drop-shadow-lg" >
-                        Bienvenido a Shiro Nexus
-                    </motion.h1>
-                    <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-10 leading-relaxed" >
-                        Tu portal central para explorar premios de anime, participar en votaciones, acceder a traducciones exclusivas y mucho más.
-                    </motion.p>
+                <motion.div className="relative z-10" variants={sectionVariants} initial="hidden" animate="visible" >
+                    <motion.h1 variants={itemVariants} className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-100 to-pink-300 drop-shadow-lg" > Bienvenido a Shiro Nexus </motion.h1>
+                    <motion.p variants={itemVariants} className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-10 leading-relaxed" > Tu portal central para explorar premios de anime, participar en votaciones, acceder a traducciones exclusivas y mucho más. </motion.p>
                     <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} >
-                        <Link to="/premios" className="inline-block bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-8 py-3 rounded-lg shadow-lg transition-all duration-300 transform hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900" >
-                            Explorar Shiro Awards 2025
-                        </Link>
+                        <Link to="/premios" className="inline-block bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-8 py-3 rounded-lg shadow-lg transition-all duration-300 transform hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900" > Explorar Shiro Awards 2025 </Link>
                     </motion.div>
                 </motion.div>
             </section>
             <div className="h-1 bg-gradient-to-r from-transparent via-pink-800/50 to-transparent"></div>
 
-            {/* === Featured Sections Grid === (unchanged) */}
-            <motion.section
-                className="py-16 md:py-24 px-6 bg-gray-950"
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.1 }}
-            >
+            {/* === Featured Sections Grid === (Complete) */}
+            <motion.section className="py-16 md:py-24 px-6 bg-gray-950" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} >
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">Explora Nuestras Secciones</h2>
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
-                    <motion.div variants={itemVariants}>
-                        <FeatureCard
-                            icon={ <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg> }
-                            title="Premios"
-                            description="Descubre los ganadores anuales y lo más destacado de la temporada."
-                            link="/premios"
-                            color="pink" />
-                    </motion.div>
-                     <motion.div variants={itemVariants}>
-                        <FeatureCard
-                            icon={ <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> </svg> }
-                            title="Votaciones"
-                            description="¡Tu opinión cuenta! Participa en nuestras encuestas y votaciones activas."
-                            link="/votaciones"
-                            color="blue" />
-                    </motion.div>
-                     <motion.div variants={itemVariants}>
-                        <FeatureCard
-                            icon={ <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /> </svg> }
-                            title="Traducciones"
-                            description="Explora contenido exclusivo, entrevistas y noticias traducidas por nuestro equipo."
-                            link="/traducciones"
-                            color="green" />
-                    </motion.div>
+                     <motion.div variants={itemVariants}> <FeatureCard icon={ <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> </svg> } title="Premios" description="Descubre los ganadores anuales y lo más destacado de la temporada." link="/premios" color="pink" /> </motion.div>
+                      <motion.div variants={itemVariants}> <FeatureCard icon={ <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> </svg> } title="Votaciones" description="¡Tu opinión cuenta! Participa en nuestras encuestas y votaciones activas." link="/votaciones" color="blue" /> </motion.div>
+                      <motion.div variants={itemVariants}> <FeatureCard icon={ <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /> </svg> } title="Traducciones" description="Explora contenido exclusivo, entrevistas y noticias traducidas por nuestro equipo." link="/traducciones" color="green" /> </motion.div>
                 </div>
             </motion.section>
             <div className="h-px bg-gradient-to-r from-transparent via-blue-800/50 to-transparent my-10"></div>
 
-             {/* === Latest Translations Preview Section === (MODIFIED) */}
-            <motion.section
-                className="py-16 md:py-20 px-6 bg-transparent"
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.1 }}
-            >
-                <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">
-                    <span className="text-green-400">Traducciones</span> Recientes
-                </h2>
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-1 gap-6">
-                    {isLoading ? (
-                        <LoadingSpinner />
-                    ) : error ? (
-                        <ErrorDisplay message={error} />
-                    ) : recentTranslations.length > 0 ? (
-                        recentTranslations.map(item => (
-                            <motion.div key={item.id} variants={itemVariants}>
-                                {/* Pass the processed data to the preview card */}
-                                <TranslationPreviewCard item={item} />
-                            </motion.div>
-                        ))
+             {/* === Latest Translations Preview Section === */}
+             <motion.section className="py-16 md:py-20 px-6 bg-transparent" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} >
+                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white"> <span className="text-green-400">Traducciones</span> Recientes </h2>
+                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-1 gap-6">
+                     {isLoadingTranslations ? ( <LoadingSpinner text="Cargando traducciones..." /> )
+                      : errorTranslations ? ( <ErrorDisplay message={errorTranslations} /> )
+                      : recentTranslations.length > 0 ? (
+                         recentTranslations.map(item => ( <motion.div key={item.id} variants={itemVariants}> <TranslationPreviewCard item={item} /> </motion.div> ))
+                      ) : ( <NoDataMessage message="No hay traducciones recientes para mostrar." /> )}
+                 </div>
+                  {!isLoadingTranslations && !errorTranslations && ( <div className="text-center mt-12"> <Link to="/traducciones" className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-colors" > Ver Todas las Traducciones </Link> </div> )}
+             </motion.section>
+             <div className="h-px bg-gradient-to-r from-transparent via-yellow-800/50 to-transparent my-10"></div>
+
+            {/* === Latest Winners Preview Section === */}
+            <motion.section className="py-16 md:py-20 px-6 bg-transparent" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} >
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white"> <span className="text-yellow-400">Ganadores</span> Destacados (Awards 2025) </h2>
+                <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {isLoadingWinners ? (
+                        <div className="md:col-span-2"> <LoadingSpinner text="Cargando ganadores..." /> </div>
+                    ) : errorWinners ? (
+                         <div className="md:col-span-2"> <ErrorDisplay message={errorWinners} /> </div>
+                    ) : featuredWinners.length > 0 ? (
+                        featuredWinners.map(winner => ( <motion.div key={winner.id} variants={itemVariants}> <WinnerCard winner={winner} /> </motion.div> ))
                     ) : (
-                       <NoTranslationsMessage />
+                         <div className="md:col-span-2"> <NoDataMessage message="¡Los ganadores de Shiro Awards 2025 se anunciarán próximamente!" /> </div>
                     )}
                 </div>
-                 {/* Link to all translations (only show if not loading/error) */}
-                 {!isLoading && !error && (
+                 {!isLoadingWinners && !errorWinners && (
                      <div className="text-center mt-12">
-                        <Link
-                            to="/traducciones"
-                            className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 transition-colors"
-                        >
-                            Ver Todas las Traducciones
-                        </Link>
+                        <Link to="/premios" className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 focus:ring-offset-gray-900 transition-colors" > Ver Todos los Premios </Link>
                     </div>
                  )}
             </motion.section>
-            <div className="h-px bg-gradient-to-r from-transparent via-yellow-800/50 to-transparent my-10"></div>
 
-            {/* === Latest Winners Preview Section === (unchanged) */}
-            <motion.section
-                className="py-16 md:py-20 px-6 bg-transparent"
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-            >
-                <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">
-                    <span className="text-yellow-400">Ganadores</span> Destacados (Awards 2025)
-                </h2>
-                <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {previewWinners.map(winner => (
-                        <motion.div key={winner.id} variants={itemVariants}>
-                            <WinnerCard winner={winner} />
-                        </motion.div>
-                    ))}
-                </div>
-                 <div className="text-center mt-12">
-                    <Link
-                        to="/premios"
-                        className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 focus:ring-offset-gray-900 transition-colors"
-                    >
-                         Ver Todos los Premios
-                    </Link>
-                </div>
-            </motion.section>
-
-            {/* === Call to Action Section === (unchanged) */}
-             <motion.section
-                className="py-16 md:py-24 px-6 my-16 md:my-24 relative overflow-hidden rounded-xl max-w-7xl mx-auto bg-gradient-to-r from-blue-900/50 to-purple-900/50"
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-             >
-                 <div className="absolute inset-0 z-0 opacity-10">
-                    <img src="https://placehold.co/1920x600/0A0A0A/222222?text=+" alt="Abstract background pattern" className="w-full h-full object-cover"/>
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div>
-                </div>
+            {/* === Call to Action Section === (Complete) */}
+             <motion.section className="py-16 md:py-24 px-6 my-16 md:my-24 relative overflow-hidden rounded-xl max-w-7xl mx-auto bg-gradient-to-r from-blue-900/50 to-purple-900/50" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} >
+                 <div className="absolute inset-0 z-0 opacity-10"> <img src="https://placehold.co/1920x600/0A0A0A/222222?text=+" alt="Abstract background pattern" className="w-full h-full object-cover"/> <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div> </div>
                  <motion.div variants={itemVariants} className="relative z-10 max-w-3xl mx-auto text-center">
                      <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">¡Participa en la Comunidad!</h2>
-                     <p className="text-gray-300 mb-8">
-                        Tu voz es importante. Vota por tus favoritos de la temporada, comenta en las traducciones y únete a la conversación.
-                    </p>
+                     <p className="text-gray-300 mb-8"> Tu voz es importante. Vota por tus favoritos de la temporada, comenta en las traducciones y únete a la conversación. </p>
                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                         <Link
-                            to="/votaciones"
-                            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-300 transform hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                         >
-                            Ir a Votaciones
-                        </Link>
-                    </motion.div>
-                </motion.div>
-            </motion.section>
+                         <Link to="/votaciones" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-300 transform hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900" > Ir a Votaciones </Link>
+                     </motion.div>
+                 </motion.div>
+             </motion.section>
 
             <ScrollToTopButton />
         </motion.div>
     );
 }
+
+// --- Temporary AwardData interface used during loading ---
+// This interface was used in the previous version for loading translations,
+// but the award loading logic now uses the full AwardData interface defined above.
+// Keeping it here might cause confusion if not used. Let's remove it if not needed.
+// interface AwardData {
+//     id: string;
+//     frontmatter: { [key: string]: any }; // Store raw frontmatter
+// }
+
 
 export default HomePage;
