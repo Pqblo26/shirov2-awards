@@ -2,7 +2,7 @@
 slug: dfgdgfdgfd
 award_type: Temporada
 category_temporada: Mejor Anime de Invierno
-is_active: true
+is_active: false
 description: SDFSDFDSFDS
 nominees:
   - nominee_id: sdfdsfsfs
