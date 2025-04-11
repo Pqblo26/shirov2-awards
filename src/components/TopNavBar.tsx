@@ -16,6 +16,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
          { href: "/", label: "Inicio" },
          { href: "/traducciones", label: "Traducciones" },
          { href: "/premios", label: "Premios" },
+         { href: "/votaciones", label: "Votaciones" },
          // --- ENLACE AÑADIDO ---
          { href: "/sobre-mi", label: "Sobre Mí" },
          // --- FIN ENLACE AÑADIDO ---

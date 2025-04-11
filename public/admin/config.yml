@@ -167,4 +167,93 @@ collections:
         value_type: "int"
         hint: "Número para ordenar manualmente dentro de cada tipo (menor aparece primero)."
 
-# ... (resto del archivo config.yml si hubiera algo más) ...
+# ... (backend, media_folder, colección traducciones, colección wip_items) ...
+
+  # --- COLECCIÓN VOTACIONES (Modificada) ---
+  - name: "votaciones"
+    label: "Votaciones / Encuestas"
+    label_singular: "Votación"
+    folder: "content/votaciones"
+    create: true
+    delete: true
+    # --- SLUG MODIFICADO: Ahora es un campo dedicado ---
+    slug: "{{slug}}" # Usa el valor del campo 'slug' definido abajo
+    # --- SUMMARY MODIFICADO ---
+    summary: "{{slug}} ({{fields.award_type}})" # Muestra slug y tipo
+    fields:
+      # --- NUEVO CAMPO SLUG ---
+      - label: "Identificador Corto (Slug)"
+        name: "slug"
+        widget: "string"
+        required: true
+        hint: "Identificador único para la URL (usar minúsculas, números, guiones). Ej: mejor-opening-2025, mejor-anime-invierno"
+        pattern: ['^[a-z0-9-]+$', "Usar solo minúsculas, números y guiones"]
+      # --- FIN NUEVO CAMPO SLUG ---
+      - label: "Tipo de Premio Asociado"
+        name: "award_type"
+        widget: "select"
+        options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año", "Otra"]
+        required: true
+        hint: "Ayuda a agrupar las votaciones y mostrar las categorías correctas."
+
+      # --- CAMPO category_title ELIMINADO ---
+
+      # --- CAMPOS CONDICIONALES PARA CATEGORÍA (Copiados de 'premios') ---
+      - label: "Categoría Específica (Temporada)"
+        name: "category_temporada"
+        widget: "select"
+        condition: { field: "award_type", value: "Temporada" }
+        options: ["Mejor Anime de Invierno", "Mejor Anime de Primavera", "Mejor Anime de Verano", "Mejor Anime de Otoño"]
+        required: true
+      - label: "Categoría Específica (Aspecto Técnico)"
+        name: "category_aspecto"
+        widget: "select"
+        condition: { field: "award_type", value: "Aspecto Técnico" }
+        options: ["Mejor Adaptación", "Mejor Animación", "Mejor Banda Sonora", "Mejor Estudio"]
+        required: true
+      - label: "Categoría Específica (Actor de Voz)"
+        name: "category_actor"
+        widget: "select"
+        condition: { field: "award_type", value: "Actor de Voz" }
+        options: ["Mejor Actor de Voz", "Mejor Actriz de Voz"]
+        required: true
+      - label: "Categoría Específica (Género)"
+        name: "category_genero"
+        widget: "select"
+        condition: { field: "award_type", value: "Género" }
+        options: ["Acción", "Aventura", "Comedia", "Drama", "Deporte", "Romance", "SCIFI o Mecha", "Slice of Life", "Supernatural", "Ecchi"]
+        required: true
+      - label: "Categoría Específica (Anual)"
+        name: "category_anual"
+        widget: "select"
+        condition: { field: "award_type", value: "Ganadores del Año" }
+        options: ["Mejor Anime del Año", "Mejor Película del Año", "Mejor Chico", "Mejor Chica", "Mejor Pareja", "Mejor Opening", "Mejor Ending"]
+        required: true
+      # --- FIN CAMPOS CONDICIONALES ---
+
+      - label: "Votación Activa"
+        name: "is_active"
+        widget: "boolean"
+        default: true
+        required: false
+        hint: "Marcar si esta categoría está abierta para votar."
+      - label: "Descripción (Opcional)"
+        name: "description"
+        widget: "text"
+        required: false
+        hint: "Una breve descripción de la categoría de votación."
+      - label: "Nominados"
+        name: "nominees"
+        widget: "list"
+        label_singular: "Nominado"
+        summary: "{{fields.nominee_name}}"
+        required: true
+        min: 2
+        hint: "Añade aquí las opciones para votar en esta categoría."
+        fields:
+          - { label: "ID Único del Nominado", name: "nominee_id", widget: "string", required: true, hint: "Un ID simple y único para esta opción (ej: anime-01, op-abc). No usar espacios ni caracteres especiales." }
+          - { label: "Nombre del Nominado", name: "nominee_name", widget: "string", required: true, hint: "Nombre del anime, personaje, canción, etc." }
+          - { label: "Imagen del Nominado", name: "nominee_image", widget: "image", required: false }
+          - { label: "Info Extra (Opcional)", name: "nominee_extra", widget: "string", required: false, hint: "Ej: Estudio, Artista, Personaje..." }
+
+# ... (resto de las colecciones: traducciones, wip_items, premios) ...

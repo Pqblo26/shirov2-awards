@@ -11,7 +11,7 @@ import {
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import PremiosPage from './pages/PremiosPage';
-// import VotacionesPage from './pages/VotacionesPage'; // Sigue comentado
+import VotacionesPage from './pages/VotacionesPage'; // Sigue comentado
 import TraduccionesPage from './pages/TraduccionesPage';
 import SingleTranslationPage from './pages/SingleTranslationPage';
 import AboutMePage from './pages/AboutMePage'; // Importar la nueva página
@@ -38,7 +38,7 @@ const router = createBrowserRouter([
       { path: 'sobre-mi', element: <AboutMePage /> },
       // --- FIN RUTA AÑADIDA ---
       // --- Otras rutas siguen comentadas ---
-      // { path: 'votaciones', element: <VotacionesPage /> },
+      { path: 'votaciones', element: <VotacionesPage /> },
       // { path: 'login', element: <LoginPage /> },
       // { path: 'admin', element: <AdminPage /> },
     ],
