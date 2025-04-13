@@ -169,40 +169,44 @@ collections:
 
 # ... (backend, media_folder, colección traducciones, colección wip_items) ...
 
-  # --- COLECCIÓN VOTACIONES (Intentando Arreglar Condiciones y Summary) ---
+  # --- COLECCIÓN VOTACIONES (Final con Summary Funcional) ---
   - name: "votaciones"
-    label: "Votaciones / Encuestas"
-    label_singular: "Votación"
+    label: "Votaciones / Encuestas" # Etiqueta Final
+    label_singular: "Votación" # Etiqueta Final
     folder: "content/votaciones"
     create: true
     delete: true
-    slug: "{{slug}}"
-    # --- SUMMARY SIMPLIFICADO (para probar) ---
-    summary: "{{slug}}" # Mostrar solo el slug para ver si funciona
-    # --- FIN SUMMARY SIMPLIFICADO ---
+    slug: "{{slug}}" # Usa el campo slug de abajo
+    # --- SUMMARY: Usando la sintaxis que funcionó ---
+    summary: "{{fields.slug}} ({{fields.award_type}})"
+    # --- FIN SUMMARY ---
     fields:
+      # Campo slug obligatorio
       - label: "Identificador Corto (Slug)"
         name: "slug"
         widget: "string"
         required: true
-        hint: "Identificador único para la URL (usar minúsculas, números, guiones). Ej: mejor-opening-2025, mejor-anime-invierno"
+        hint: "Identificador único para la URL (usar minúsculas, números, guiones). Ej: mejor-opening-2025"
         pattern: ['^[a-z0-9-]+$', "Usar solo minúsculas, números y guiones"]
+      # Campo Tipo de Premio
       - label: "Tipo de Premio Asociado"
         name: "award_type"
         widget: "select"
         options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año", "Otra"]
         required: true
-        hint: "Ayuda a agrupar las votaciones y mostrar las categorías correctas."
+        hint: "Selecciona el tipo para mostrar la categoría correcta (ignora otros campos de categoría en el editor)."
 
       # --- Campos condicionales para categoría (required: false, value entre comillas) ---
+      # Recordatorio: Pueden aparecer todos en el editor, rellenar solo el relevante.
       - label: "Categoría Específica (Temporada)"
         name: "category_temporada"
         widget: "select"
         required: false
         condition:
           field: "award_type"
-          value: 'Temporada' # Valor entre comillas simples
+          value: 'Temporada'
         options: ["Mejor Anime de Invierno", "Mejor Anime de Primavera", "Mejor Anime de Verano", "Mejor Anime de Otoño"]
+        hint: "Rellenar solo si el Tipo es 'Temporada'."
 
       - label: "Categoría Específica (Aspecto Técnico)"
         name: "category_aspecto"
@@ -210,8 +214,9 @@ collections:
         required: false
         condition:
           field: "award_type"
-          value: 'Aspecto Técnico' # Valor entre comillas simples
+          value: 'Aspecto Técnico'
         options: ["Mejor Adaptación", "Mejor Animación", "Mejor Banda Sonora", "Mejor Estudio"]
+        hint: "Rellenar solo si el Tipo es 'Aspecto Técnico'."
 
       - label: "Categoría Específica (Actor de Voz)"
         name: "category_actor"
@@ -219,8 +224,9 @@ collections:
         required: false
         condition:
           field: "award_type"
-          value: 'Actor de Voz' # Valor entre comillas simples
+          value: 'Actor de Voz'
         options: ["Mejor Actor de Voz", "Mejor Actriz de Voz"]
+        hint: "Rellenar solo si el Tipo es 'Actor de Voz'."
 
       - label: "Categoría Específica (Género)"
         name: "category_genero"
@@ -228,8 +234,9 @@ collections:
         required: false
         condition:
           field: "award_type"
-          value: 'Género' # Valor entre comillas simples
+          value: 'Género'
         options: ["Acción", "Aventura", "Comedia", "Drama", "Deporte", "Romance", "SCIFI o Mecha", "Slice of Life", "Supernatural", "Ecchi"]
+        hint: "Rellenar solo si el Tipo es 'Género'."
 
       - label: "Categoría Específica (Anual)"
         name: "category_anual"
@@ -237,11 +244,12 @@ collections:
         required: false
         condition:
           field: "award_type"
-          value: 'Ganadores del Año' # Valor entre comillas simples
+          value: 'Ganadores del Año'
         options: ["Mejor Anime del Año", "Mejor Película del Año", "Mejor Chico", "Mejor Chica", "Mejor Pareja", "Mejor Opening", "Mejor Ending"]
-
+        hint: "Rellenar solo si el Tipo es 'Ganadores del Año'."
       # --- Fin Campos condicionales ---
 
+      # --- Otros campos ---
       - label: "Votación Activa"
         name: "is_active"
         widget: "boolean"
@@ -255,14 +263,16 @@ collections:
         name: "nominees"
         widget: "list"
         label_singular: "Nominado"
-        summary: "{{fields.nominee_name}}"
+        summary: "{{fields.nominee_name}}" # Summary para items de la lista (debería funcionar)
         required: true
         min: 2
         hint: "Añade aquí las opciones para votar en esta categoría."
         fields:
-          - { label: "ID Único del Nominado", name: "nominee_id", widget: "string", required: true, hint: "Un ID simple y único para esta opción (ej: anime-01, op-abc). No usar espacios ni caracteres especiales." }
+          - { label: "ID Único del Nominado", name: "nominee_id", widget: "string", required: true, hint: "Un ID simple y único para esta opción (ej: anime-01, op-abc)." }
           - { label: "Nombre del Nominado", name: "nominee_name", widget: "string", required: true, hint: "Nombre del anime, personaje, canción, etc." }
           - { label: "Imagen del Nominado", name: "nominee_image", widget: "image", required: false }
           - { label: "Info Extra (Opcional)", name: "nominee_extra", widget: "string", required: false, hint: "Ej: Estudio, Artista, Personaje..." }
 
-# ... (resto de las colecciones: traducciones, wip_items, premios) ...
+# ... (colección premios) ...
+
+
