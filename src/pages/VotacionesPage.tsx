@@ -53,8 +53,9 @@ function VotacionesPage() {
     const [categories, setCategories] = useState<VotingCategoryData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedVotes, setSelectedVotes] = useState<VotesState>({});
-    const [userVotes, setUserVotes] = useState<VotesState>({});
+    const [selectedVotes, setSelectedVotes] = useState<VotesState>({}); // Votos temporales
+    const [userVotes, setUserVotes] = useState<VotesState>({}); // Votos confirmados (leídos de localStorage para UI)
+    const [isSubmitting, setIsSubmitting] = useState(false); // Estado para indicar envío API
 
     // --- Effects ---
     useEffect(() => { document.title = "Votaciones | Shiro Nexus"; }, []);
@@ -155,16 +156,72 @@ function VotacionesPage() {
         setSelectedVotes(prev => ({ ...prev, [categorySlug]: prev[categorySlug] === nomineeId ? null : nomineeId }));
     };
 
-    // --- Handle Confirming All Selections ---
-    const handleConfirmVotes = () => {
-        const newConfirmedVotes = { ...userVotes, ...selectedVotes };
-        Object.keys(newConfirmedVotes).forEach(key => { if (newConfirmedVotes[key] === null) delete newConfirmedVotes[key]; });
-        setUserVotes(newConfirmedVotes); setSelectedVotes({});
+    // --- Handle Confirming All Selections (MODIFIED to call API) ---
+    const handleConfirmVotes = async () => {
+        setIsSubmitting(true); // Indicar que se están enviando
+        setError(null); // Limpiar errores previos
+
+        const votesToSubmit = { ...selectedVotes }; // Copia de los votos seleccionados
+        const votePromises: Promise<Response>[] = []; // Array para guardar las promesas de fetch
+
+        // Crear una petición fetch para cada voto seleccionado
+        for (const categorySlug in votesToSubmit) {
+            const nomineeId = votesToSubmit[categorySlug];
+            if (nomineeId) { // Asegurarse de que hay un nominado seleccionado
+                console.log(`Preparando voto: ${categorySlug} -> ${nomineeId}`);
+                votePromises.push(
+                    fetch('/api/vote', { // Llama a nuestra serverless function
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ categorySlug, nomineeId }), // Envía los datos
+                    })
+                );
+            }
+        }
+
         try {
-            localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(newConfirmedVotes));
-            alert("¡Votos confirmados! (Guardados en este navegador)");
-        } catch (err) { console.error("Error saving votes:", err); alert("Error al guardar los votos."); }
+            // Esperar a que todas las peticiones terminen
+            const results = await Promise.all(votePromises);
+
+            // Verificar si todas las respuestas fueron exitosas (status 2xx)
+            const allSucceeded = results.every(res => res.ok);
+
+            if (allSucceeded) {
+                // Si todo OK:
+                // 1. Actualizar el estado de votos confirmados (para la UI)
+                const newConfirmedVotes = { ...userVotes, ...votesToSubmit };
+                // Filtrar nulls por si acaso (aunque no debería haberlos aquí)
+                 Object.keys(newConfirmedVotes).forEach(key => { if (newConfirmedVotes[key] === null) delete newConfirmedVotes[key]; });
+                setUserVotes(newConfirmedVotes);
+
+                // 2. Guardar en localStorage (para recordar en la UI)
+                localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(newConfirmedVotes));
+
+                // 3. Limpiar selecciones temporales
+                setSelectedVotes({});
+
+                // 4. Mensaje al usuario
+                alert("¡Votos registrados con éxito!"); // Mejorar con un toast/modal real
+
+            } else {
+                // Si alguna petición falló
+                console.error('Algunos votos no se pudieron registrar:', results);
+                setError("Error al registrar algunos votos. Inténtalo de nuevo.");
+                // Nota: Aquí podríamos intentar reintentar solo los fallidos, pero es más complejo.
+                // Por ahora, simplemente mostramos un error general.
+            }
+
+        } catch (fetchError) {
+            // Error de red o similar
+            console.error('Error al enviar los votos:', fetchError);
+            setError("Error de red al enviar los votos. Comprueba tu conexión.");
+        } finally {
+            setIsSubmitting(false); // Terminar estado de envío
+        }
     };
+    // --- FIN MODIFICACIÓN ---
 
     // --- Animation Variants ---
     const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
@@ -179,12 +236,12 @@ function VotacionesPage() {
     const hasPendingSelections = Object.values(selectedVotes).some(vote => vote !== null);
 
     return (
-        // Main Container with background
+        // --- Main Container: Con fondo y sin max-width ---
         <motion.div
-            className="min-h-screen w-full px-4 sm:px-6 lg:px-8 py-20 md:py-28 bg-gray-950" // Fondo sólido oscuro
+            className="min-h-screen w-full px-4 sm:px-6 lg:px-8 py-20 md:py-28 bg-gray-950"
             variants={containerVariants} initial="hidden" animate="visible" exit="hidden"
         >
-            {/* Inner Centering Container */}
+            {/* --- Inner Centering Container --- */}
             <div className="max-w-7xl mx-auto">
 
                 {/* Page Title */}
@@ -231,20 +288,20 @@ function VotacionesPage() {
                                             const confirmedVote = userVotes[category.slug] ?? null;
 
                                             return (
-                                                // Container for one voting category
+                                                // Container for one voting category - Estilo base
                                                 <motion.div
                                                     key={category.id}
                                                     variants={sectionVariants}
-                                                    // Estilo base del contenedor de categoría
                                                     className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 md:p-10 shadow-lg"
                                                 >
-                                                    {/* Category Title - Blanco como en la versión anterior */}
+                                                    {/* Category Title - Blanco */}
                                                     <h3 className="text-2xl md:text-3xl font-bold text-center mb-6 text-white">{category.resolved_category}</h3>
-                                                    {/* Category Description - MODIFIED SIZE */}
-                                                    {category.description && <p className="text-lg text-gray-300 text-center mb-12 max-w-xl mx-auto leading-relaxed">{category.description}</p>} {/* Cambiado a text-lg */}
+                                                    {/* Category Description - Tamaño ajustado */}
+                                                    {category.description && <p className="text-lg text-gray-300 text-center mb-12 max-w-xl mx-auto leading-relaxed">{category.description}</p>}
 
-                                                    {/* Nominees Grid - Styling inside cards remains unchanged */}
+                                                    {/* Nominees Grid */}
                                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6 mt-8">
+                                                        {/* --- INICIO RENDERIZADO NOMINADOS (COMPLETO) --- */}
                                                         {(category.nominees ?? []).map((nominee) => {
                                                             const isSelected = currentSelection === nominee.nominee_id;
                                                             const isConfirmed = confirmedVote === nominee.nominee_id;
@@ -258,7 +315,6 @@ function VotacionesPage() {
                                                             const imageStyle: React.CSSProperties = { objectPosition: nominee.image_position_select || 'center center' };
 
                                                             return (
-                                                                // Nominee Card - Unchanged
                                                                 <motion.div
                                                                     key={nominee.nominee_id} variants={nomineeVariants}
                                                                     className={`relative rounded-lg overflow-hidden border-2 transition-all duration-300 ease-out flex flex-col text-center group ${cardStyle} ${canInteract ? 'cursor-pointer' : 'cursor-not-allowed' } ${canInteract ? hoverStyle : ''} ${scaleEffect}`}
@@ -266,23 +322,21 @@ function VotacionesPage() {
                                                                     whileHover={canInteract ? { y: -4, transition: { type: 'spring', stiffness: 300 } } : {}}
                                                                     whileTap={canInteract ? { scale: isSelected ? 1.03 : 0.98 } : {}}
                                                                 >
-                                                                    {/* Nominee Image */}
                                                                     <div className="aspect-w-3 aspect-h-4 bg-gray-700">
                                                                         {nominee.nominee_image ? ( <img src={nominee.nominee_image} alt={nominee.nominee_name || 'Nominado'} className="w-full h-full object-cover" style={imageStyle} loading="lazy" onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/300x400/7F1D1D/FECACA?text=Error`; (e.target as HTMLImageElement).alt="Error Imagen"; }} /> )
                                                                         : ( <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs italic">Sin Imagen</div> )}
                                                                     </div>
-                                                                    {/* Details */}
                                                                     <div className="p-3 flex-grow flex flex-col justify-center min-h-[5.5rem]">
                                                                         <p className={`font-semibold text-base leading-tight mb-1 ${textStyle} group-hover:text-cyan-300 transition-colors`}>
                                                                             {nominee.nominee_name || '??'}
                                                                         </p>
                                                                         {nominee.nominee_extra && <p className="text-xs text-gray-400/90 mt-0.5">{nominee.nominee_extra}</p>}
                                                                     </div>
-                                                                    {/* Voted/Selected Indicator */}
                                                                     {(isSelected || isConfirmed) && ( <div className={`absolute top-1.5 right-1.5 p-0.5 rounded-full shadow ${isConfirmed ? 'bg-green-600/80' : 'bg-cyan-500/80'} backdrop-blur-sm`}> {indicator} </div> )}
                                                                 </motion.div>
                                                             );
                                                         })}
+                                                        {/* --- FIN RENDERIZADO NOMINADOS --- */}
                                                     </div>
                                                     {/* Message indicating vote is confirmed */}
                                                     {isCategoryConfirmed && (
@@ -314,15 +368,28 @@ function VotacionesPage() {
                         <button
                             onClick={handleConfirmVotes}
                             className="px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-lg rounded-lg shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-300/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105"
-                            disabled={!hasPendingSelections}
+                            disabled={isSubmitting} // Deshabilitar mientras se envía
                         >
-                            Confirmar Mis Votos Seleccionados
+                            {isSubmitting ? 'Enviando...' : 'Confirmar Mis Votos Seleccionados'}
                         </button>
                         <p className="text-sm text-gray-500/90 mt-4">
                             (Los votos confirmados se guardarán solo en este navegador)
                         </p>
                     </motion.div>
                 )}
+                 {/* Indicador de envío */}
+                 {isSubmitting && !error && ( // Mostrar solo si está enviando y no hay error
+                         <div className="mt-24 text-center text-lg text-blue-300">
+                            Registrando votos...
+                         </div>
+                 )}
+                 {/* Mostrar error de envío si existe */}
+                 {error && !isLoading && ( // Mostrar solo si hay error de envío y no está cargando datos iniciales
+                        <div className="mt-24 text-center">
+                            <ErrorIndicator message={error} />
+                        </div>
+                 )}
+
 
                 <ScrollToTopButton />
 

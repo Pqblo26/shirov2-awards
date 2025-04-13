@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "buffer": "^6.0.3",
     "disqus-react": "^1.1.6",
     "framer-motion": "^10.16.1",
