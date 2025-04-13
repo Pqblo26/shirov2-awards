@@ -169,68 +169,62 @@ collections:
 
 # ... (backend, media_folder, colección traducciones, colección wip_items) ...
 
-  # --- COLECCIÓN VOTACIONES (Modificada) ---
+  # --- COLECCIÓN VOTACIONES (Summary Corregido) ---
   - name: "votaciones"
     label: "Votaciones / Encuestas"
     label_singular: "Votación"
     folder: "content/votaciones"
     create: true
     delete: true
-    # --- SLUG MODIFICADO: Ahora es un campo dedicado ---
-    slug: "{{slug}}" # Usa el valor del campo 'slug' definido abajo
-    # --- SUMMARY MODIFICADO ---
-    summary: "{{slug}} ({{fields.award_type}})" # Muestra slug y tipo
+    slug: "{{slug}}"
+    # --- SUMMARY CORREGIDO ---
+    summary: "{{slug}} ({{award_type}})" # Acceso directo a los campos principales
+    # --- FIN SUMMARY CORREGIDO ---
     fields:
-      # --- NUEVO CAMPO SLUG ---
       - label: "Identificador Corto (Slug)"
         name: "slug"
         widget: "string"
         required: true
         hint: "Identificador único para la URL (usar minúsculas, números, guiones). Ej: mejor-opening-2025, mejor-anime-invierno"
         pattern: ['^[a-z0-9-]+$', "Usar solo minúsculas, números y guiones"]
-      # --- FIN NUEVO CAMPO SLUG ---
       - label: "Tipo de Premio Asociado"
         name: "award_type"
         widget: "select"
         options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año", "Otra"]
         required: true
         hint: "Ayuda a agrupar las votaciones y mostrar las categorías correctas."
-
-      # --- CAMPO category_title ELIMINADO ---
-
-      # --- CAMPOS CONDICIONALES PARA CATEGORÍA (Copiados de 'premios') ---
+      # --- Campos condicionales para categoría ---
       - label: "Categoría Específica (Temporada)"
         name: "category_temporada"
         widget: "select"
         condition: { field: "award_type", value: "Temporada" }
         options: ["Mejor Anime de Invierno", "Mejor Anime de Primavera", "Mejor Anime de Verano", "Mejor Anime de Otoño"]
-        required: false
+        required: true
       - label: "Categoría Específica (Aspecto Técnico)"
         name: "category_aspecto"
         widget: "select"
         condition: { field: "award_type", value: "Aspecto Técnico" }
         options: ["Mejor Adaptación", "Mejor Animación", "Mejor Banda Sonora", "Mejor Estudio"]
-        required: false
+        required: true
       - label: "Categoría Específica (Actor de Voz)"
         name: "category_actor"
         widget: "select"
         condition: { field: "award_type", value: "Actor de Voz" }
         options: ["Mejor Actor de Voz", "Mejor Actriz de Voz"]
-        required: false
+        required: true
       - label: "Categoría Específica (Género)"
         name: "category_genero"
         widget: "select"
         condition: { field: "award_type", value: "Género" }
         options: ["Acción", "Aventura", "Comedia", "Drama", "Deporte", "Romance", "SCIFI o Mecha", "Slice of Life", "Supernatural", "Ecchi"]
-        required: false
+        required: true
       - label: "Categoría Específica (Anual)"
         name: "category_anual"
         widget: "select"
         condition: { field: "award_type", value: "Ganadores del Año" }
         options: ["Mejor Anime del Año", "Mejor Película del Año", "Mejor Chico", "Mejor Chica", "Mejor Pareja", "Mejor Opening", "Mejor Ending"]
-        required: false
-      # --- FIN CAMPOS CONDICIONALES ---
-
+        required: true
+      # --- Fin Campos condicionales ---
       - label: "Votación Activa"
         name: "is_active"
         widget: "boolean"
@@ -246,7 +240,7 @@ collections:
         name: "nominees"
         widget: "list"
         label_singular: "Nominado"
-        summary: "{{fields.nominee_name}}"
+        summary: "{{fields.nominee_name}}" # Aquí sí se usa fields. porque está dentro de la lista
         required: true
         min: 2
         hint: "Añade aquí las opciones para votar en esta categoría."
@@ -257,3 +251,4 @@ collections:
           - { label: "Info Extra (Opcional)", name: "nominee_extra", widget: "string", required: false, hint: "Ej: Estudio, Artista, Personaje..." }
 
 # ... (resto de las colecciones: traducciones, wip_items, premios) ...
+

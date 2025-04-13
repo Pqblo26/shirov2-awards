@@ -57,8 +57,6 @@ function VotacionesPage() {
             }
         } catch (err) {
             console.error("Error loading votes from localStorage:", err);
-            // Optionally clear corrupted storage
-            // localStorage.removeItem(VOTES_STORAGE_KEY);
         }
     }, []);
 
@@ -87,7 +85,6 @@ function VotacionesPage() {
                     try {
                         const { data: frontmatter } = matter(rawContent);
 
-                        // Determine the correct category name
                         let resolvedCategory = 'Categoría Desconocida';
                         switch (frontmatter.award_type) {
                             case 'Temporada': resolvedCategory = frontmatter.category_temporada || resolvedCategory; break;
@@ -95,19 +92,17 @@ function VotacionesPage() {
                             case 'Actor de Voz': resolvedCategory = frontmatter.category_actor || resolvedCategory; break;
                             case 'Género': resolvedCategory = frontmatter.category_genero || resolvedCategory; break;
                             case 'Ganadores del Año': resolvedCategory = frontmatter.category_anual || resolvedCategory; break;
-                            case 'Otra': resolvedCategory = frontmatter.category_title || resolvedCategory; break; // Fallback if needed
+                            case 'Otra': resolvedCategory = frontmatter.category_title || resolvedCategory; break;
                         }
 
-                        // Only include active categories
                         if (frontmatter.is_active !== false) {
                              loadedCategories.push({
-                                id: frontmatter.slug || path, // Use slug field as ID
+                                id: frontmatter.slug || path,
                                 slug: frontmatter.slug || path,
                                 award_type: frontmatter.award_type,
                                 resolved_category: resolvedCategory,
                                 description: frontmatter.description,
                                 is_active: frontmatter.is_active,
-                                // Ensure nominees is an array, default to empty if missing/malformed
                                 nominees: Array.isArray(frontmatter.nominees) ? frontmatter.nominees : [],
                             });
                         }
@@ -126,44 +121,34 @@ function VotacionesPage() {
     const groupedCategories = useMemo(() => {
         const groups: { [key: string]: VotingCategoryData[] } = {};
         categories.forEach(cat => {
-            const type = cat.award_type || 'Otros'; // Group under 'Otros' if type is missing
-            if (!groups[type]) {
-                groups[type] = [];
-            }
+            const type = cat.award_type || 'Otros';
+            if (!groups[type]) groups[type] = [];
             groups[type].push(cat);
         });
-        // Optional: Sort groups by a predefined order
         const groupOrder = ["Ganadores del Año", "Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Otra"];
         const sortedGroups = Object.entries(groups).sort(([typeA], [typeB]) => {
             const indexA = groupOrder.indexOf(typeA);
             const indexB = groupOrder.indexOf(typeB);
-            if (indexA === -1 && indexB === -1) return typeA.localeCompare(typeB); // Sort unknown types alphabetically
-            if (indexA === -1) return 1; // Unknown types go last
-            if (indexB === -1) return -1; // Unknown types go last
-            return indexA - indexB; // Sort by predefined order
+            if (indexA === -1 && indexB === -1) return typeA.localeCompare(typeB);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
         });
-        return sortedGroups; // Return as array of [type, categories[]]
+        return sortedGroups;
     }, [categories]);
 
     // --- Handle Voting ---
     const handleVote = (categorySlug: string, nomineeId: string) => {
-        // Check if already voted in this category for this session
         if (userVotes[categorySlug]) {
             console.log(`Ya has votado en la categoría: ${categorySlug}`);
-            // Optionally provide user feedback (e.g., using a toast notification library)
             return;
         }
-
-        // IMPORTANT: This only simulates the vote visually and stores it in localStorage.
-        // It does NOT send data to a server or provide secure/persistent voting.
         console.log(`Votando por ${nomineeId} en ${categorySlug}`);
         const newVotes = { ...userVotes, [categorySlug]: nomineeId };
         setUserVotes(newVotes);
         try {
             localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(newVotes));
-        } catch (err) {
-            console.error("Error saving vote to localStorage:", err);
-        }
+        } catch (err) { console.error("Error saving vote to localStorage:", err); }
     };
 
     // --- Animation Variants ---
@@ -214,65 +199,72 @@ function VotacionesPage() {
                             {/* Group Title (Optional) */}
                             <h2 className="text-3xl font-bold text-center mb-10 text-cyan-300">{awardType}</h2>
                             <div className="space-y-12">
-                                {categoryList.map((category) => (
-                                    <motion.div key={category.id} variants={sectionVariants} className="bg-gray-900/50 border border-gray-700/80 rounded-xl p-6 shadow-lg">
-                                        <h3 className="text-2xl font-semibold text-center mb-3 text-white">{category.resolved_category}</h3>
-                                        {category.description && <p className="text-sm text-gray-400 text-center mb-8 max-w-xl mx-auto">{category.description}</p>}
+                                {categoryList.map((category) => {
+                                    // --- CORRECCIÓN: Definir hasVotedInCategory aquí ---
+                                    const hasVotedInCategory = !!userVotes[category.slug];
+                                    // --- FIN CORRECCIÓN ---
 
-                                        {/* Nominees Grid */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                                            {(category.nominees ?? []).map((nominee) => {
-                                                const hasVotedInCategory = !!userVotes[category.slug];
-                                                const isSelected = userVotes[category.slug] === nominee.nominee_id;
-                                                const canVote = !hasVotedInCategory;
+                                    return (
+                                        <motion.div key={category.id} variants={sectionVariants} className="bg-gray-900/50 border border-gray-700/80 rounded-xl p-6 shadow-lg">
+                                            <h3 className="text-2xl font-semibold text-center mb-3 text-white">{category.resolved_category}</h3>
+                                            {category.description && <p className="text-sm text-gray-400 text-center mb-8 max-w-xl mx-auto">{category.description}</p>}
 
-                                                return (
-                                                    <motion.div
-                                                        key={nominee.nominee_id}
-                                                        variants={nomineeVariants}
-                                                        className={`relative rounded-lg overflow-hidden border-2 transition-all duration-200 ease-in-out flex flex-col text-center group
-                                                            ${isSelected ? 'border-cyan-500 shadow-cyan-500/30 shadow-lg scale-105' : 'border-gray-700'}
-                                                            ${canVote ? 'cursor-pointer hover:border-cyan-600 hover:shadow-md' : 'opacity-70 cursor-not-allowed'}
-                                                            ${hasVotedInCategory && !isSelected ? 'opacity-50' : ''}
-                                                        `}
-                                                        onClick={canVote ? () => handleVote(category.slug, nominee.nominee_id) : undefined}
-                                                        whileHover={canVote ? { y: -5 } : {}}
-                                                        whileTap={canVote ? { scale: 0.97 } : {}}
-                                                    >
-                                                        {/* Image */}
-                                                        {nominee.nominee_image ? (
-                                                            <img
-                                                                src={nominee.nominee_image}
-                                                                alt={nominee.nominee_name || 'Nominado'}
-                                                                className="w-full h-40 object-cover bg-gray-700" // Fixed height for consistency
-                                                                loading="lazy"
-                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-40 bg-gray-700 flex items-center justify-center text-gray-500 text-xs italic">Sin Imagen</div>
-                                                        )}
-                                                        {/* Details */}
-                                                        <div className="p-3 bg-gray-800/80 flex-grow flex flex-col justify-center">
-                                                            <p className={`font-semibold text-sm mb-1 ${isSelected ? 'text-cyan-300' : 'text-gray-100'} group-hover:text-cyan-400 transition-colors`}>
-                                                                {nominee.nominee_name || '??'}
-                                                            </p>
-                                                            {nominee.nominee_extra && <p className="text-xs text-gray-400">{nominee.nominee_extra}</p>}
-                                                        </div>
-                                                        {/* Voted Indicator */}
-                                                        {isSelected && (
-                                                            <div className="absolute top-1 right-1 bg-cyan-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow">
-                                                                Votado
+                                            {/* Nominees Grid */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                                                {(category.nominees ?? []).map((nominee) => {
+                                                    // Calcular isSelected y canVote aquí dentro, usando hasVotedInCategory definida antes
+                                                    const isSelected = userVotes[category.slug] === nominee.nominee_id;
+                                                    const canVote = !hasVotedInCategory;
+
+                                                    return (
+                                                        <motion.div
+                                                            key={nominee.nominee_id}
+                                                            variants={nomineeVariants}
+                                                            className={`relative rounded-lg overflow-hidden border-2 transition-all duration-200 ease-in-out flex flex-col text-center group
+                                                                ${isSelected ? 'border-cyan-500 shadow-cyan-500/30 shadow-lg scale-105' : 'border-gray-700'}
+                                                                ${canVote ? 'cursor-pointer hover:border-cyan-600 hover:shadow-md' : 'opacity-70 cursor-not-allowed'}
+                                                                ${hasVotedInCategory && !isSelected ? 'opacity-50' : ''}
+                                                            `}
+                                                            onClick={canVote ? () => handleVote(category.slug, nominee.nominee_id) : undefined}
+                                                            whileHover={canVote ? { y: -5 } : {}}
+                                                            whileTap={canVote ? { scale: 0.97 } : {}}
+                                                        >
+                                                            {/* Image */}
+                                                            {nominee.nominee_image ? (
+                                                                <img
+                                                                    src={nominee.nominee_image}
+                                                                    alt={nominee.nominee_name || 'Nominado'}
+                                                                    className="w-full h-40 object-cover bg-gray-700" // Fixed height for consistency
+                                                                    loading="lazy"
+                                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-40 bg-gray-700 flex items-center justify-center text-gray-500 text-xs italic">Sin Imagen</div>
+                                                            )}
+                                                            {/* Details */}
+                                                            <div className="p-3 bg-gray-800/80 flex-grow flex flex-col justify-center">
+                                                                <p className={`font-semibold text-sm mb-1 ${isSelected ? 'text-cyan-300' : 'text-gray-100'} group-hover:text-cyan-400 transition-colors`}>
+                                                                    {nominee.nominee_name || '??'}
+                                                                </p>
+                                                                {nominee.nominee_extra && <p className="text-xs text-gray-400">{nominee.nominee_extra}</p>}
                                                             </div>
-                                                        )}
-                                                    </motion.div>
-                                                );
-                                            })}
-                                        </div>
-                                        {hasVotedInCategory && (
-                                            <p className="text-center text-xs text-cyan-400/80 mt-4 font-semibold tracking-wide">Ya has votado en esta categoría.</p>
-                                        )}
-                                    </motion.div>
-                                ))}
+                                                            {/* Voted Indicator */}
+                                                            {isSelected && (
+                                                                <div className="absolute top-1 right-1 bg-cyan-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow">
+                                                                    Votado
+                                                                </div>
+                                                            )}
+                                                        </motion.div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {/* Usar la variable definida antes del map */}
+                                            {hasVotedInCategory && (
+                                                <p className="text-center text-xs text-cyan-400/80 mt-4 font-semibold tracking-wide">Ya has votado en esta categoría.</p>
+                                            )}
+                                        </motion.div>
+                                    );
+                                })}
                             </div>
                         </motion.section>
                     ))}
