@@ -181,7 +181,7 @@ function VotacionesPage() {
     return (
         // Main Container with background
         <motion.div
-            className="min-h-screen w-full px-4 sm:px-6 lg:px-8 py-20 md:py-28 bg-gray-950"
+            className="min-h-screen w-full px-4 sm:px-6 lg:px-8 py-20 md:py-28 bg-gray-950" // Fondo sólido oscuro
             variants={containerVariants} initial="hidden" animate="visible" exit="hidden"
         >
             {/* Inner Centering Container */}
@@ -229,22 +229,19 @@ function VotacionesPage() {
                                             const isCategoryConfirmed = !!userVotes[category.slug];
                                             const currentSelection = selectedVotes[category.slug] ?? null;
                                             const confirmedVote = userVotes[category.slug] ?? null;
-                                            // Get group style to apply color to category title
-                                            const currentGroupStyle = getGroupStyles(category.award_type);
 
                                             return (
                                                 // Container for one voting category
                                                 <motion.div
                                                     key={category.id}
                                                     variants={sectionVariants}
-                                                    className={`bg-gray-800/50 border-t-4 ${currentGroupStyle.border} border-x-0 border-b-0 border-opacity-70 rounded-xl p-8 md:p-10 shadow-lg shadow-black/20`}
+                                                    // Estilo base del contenedor de categoría
+                                                    className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 md:p-10 shadow-lg"
                                                 >
-                                                    {/* Category Title - MODIFIED with group color */}
-                                                    <h3 className={`text-2xl md:text-3xl font-bold text-center mb-6 ${currentGroupStyle.text}`}> {/* Use group text color */}
-                                                        {category.resolved_category}
-                                                    </h3>
-                                                    {/* Category Description */}
-                                                    {category.description && <p className="text-base text-gray-300 text-center mb-12 max-w-xl mx-auto leading-relaxed">{category.description}</p>}
+                                                    {/* Category Title - Blanco como en la versión anterior */}
+                                                    <h3 className="text-2xl md:text-3xl font-bold text-center mb-6 text-white">{category.resolved_category}</h3>
+                                                    {/* Category Description - MODIFIED SIZE */}
+                                                    {category.description && <p className="text-lg text-gray-300 text-center mb-12 max-w-xl mx-auto leading-relaxed">{category.description}</p>} {/* Cambiado a text-lg */}
 
                                                     {/* Nominees Grid - Styling inside cards remains unchanged */}
                                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6 mt-8">
