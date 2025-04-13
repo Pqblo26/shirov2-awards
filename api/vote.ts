@@ -63,7 +63,7 @@ export default async function handler(
 
   } catch (error) {
     console.error("API Function End - Error Caught:", error);
-    // Devolver respuesta de error
+    // Devolver respuesta de hola
     if (error instanceof Error && error.message.includes('Missing required environment variables')) {
          return res.status(500).json({ message: 'Error de configuración del servidor: Faltan variables KV.' });
     }
