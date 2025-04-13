@@ -1,7 +1,7 @@
 ---
 slug: dfgdgfdgfd
 award_type: Temporada
-category_temporada: Mejor Anime de Invierno
+category_temporada: Mejor Anime de Primavera
 is_active: true
 description: SDFSDFDSFDS
 nominees:
