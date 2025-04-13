@@ -1,5 +1,5 @@
 ---
-slug: anime-01
+slug: anime-02
 award_type: Aspecto Técnico
 category_temporada: Mejor Anime de Invierno
 is_active: true
