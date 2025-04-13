@@ -92,18 +92,26 @@ function VotacionesPage() {
                             case 'Actor de Voz': resolvedCategory = frontmatter.category_actor || resolvedCategory; break;
                             case 'Género': resolvedCategory = frontmatter.category_genero || resolvedCategory; break;
                             case 'Ganadores del Año': resolvedCategory = frontmatter.category_anual || resolvedCategory; break;
-                            case 'Otra': resolvedCategory = frontmatter.category_title || resolvedCategory; break;
+                            case 'Otra': resolvedCategory = frontmatter.category_title || resolvedCategory; break; // Fallback if needed
                         }
 
+                        // Only include active categories
                         if (frontmatter.is_active !== false) {
                              loadedCategories.push({
-                                id: frontmatter.slug || path,
+                                id: frontmatter.slug || path, // Use slug field as ID
                                 slug: frontmatter.slug || path,
                                 award_type: frontmatter.award_type,
                                 resolved_category: resolvedCategory,
                                 description: frontmatter.description,
                                 is_active: frontmatter.is_active,
+                                // Ensure nominees is an array, default to empty if missing/malformed
                                 nominees: Array.isArray(frontmatter.nominees) ? frontmatter.nominees : [],
+                                // Include raw conditional fields if needed elsewhere, though resolved_category is primary
+                                category_temporada: frontmatter.category_temporada,
+                                category_aspecto: frontmatter.category_aspecto,
+                                category_actor: frontmatter.category_actor,
+                                category_genero: frontmatter.category_genero,
+                                category_anual: frontmatter.category_anual,
                             });
                         }
 
@@ -121,34 +129,36 @@ function VotacionesPage() {
     const groupedCategories = useMemo(() => {
         const groups: { [key: string]: VotingCategoryData[] } = {};
         categories.forEach(cat => {
-            const type = cat.award_type || 'Otros';
-            if (!groups[type]) groups[type] = [];
+            const type = cat.award_type || 'Otros'; // Group under 'Otros' if type is missing
+            if (!groups[type]) {
+                groups[type] = [];
+            }
             groups[type].push(cat);
         });
+        // Optional: Sort groups by a predefined order
         const groupOrder = ["Ganadores del Año", "Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Otra"];
         const sortedGroups = Object.entries(groups).sort(([typeA], [typeB]) => {
             const indexA = groupOrder.indexOf(typeA);
             const indexB = groupOrder.indexOf(typeB);
-            if (indexA === -1 && indexB === -1) return typeA.localeCompare(typeB);
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
+            if (indexA === -1 && indexB === -1) return typeA.localeCompare(typeB); // Sort unknown types alphabetically
+            if (indexA === -1) return 1; // Unknown types go last
+            if (indexB === -1) return -1; // Unknown types go last
+            return indexA - indexB; // Sort by predefined order
         });
-        return sortedGroups;
+        return sortedGroups; // Return as array of [type, categories[]]
     }, [categories]);
 
-    // --- Handle Voting ---
+    // --- Handle Voting (Allows changing vote) ---
     const handleVote = (categorySlug: string, nomineeId: string) => {
-        if (userVotes[categorySlug]) {
-            console.log(`Ya has votado en la categoría: ${categorySlug}`);
-            return;
-        }
-        console.log(`Votando por ${nomineeId} en ${categorySlug}`);
+        // Simply update the vote for this category, allowing changes
+        console.log(`Seleccionado ${nomineeId} en ${categorySlug}`);
         const newVotes = { ...userVotes, [categorySlug]: nomineeId };
         setUserVotes(newVotes);
         try {
             localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(newVotes));
-        } catch (err) { console.error("Error saving vote to localStorage:", err); }
+        } catch (err) {
+            console.error("Error saving vote to localStorage:", err);
+        }
     };
 
     // --- Animation Variants ---
@@ -181,7 +191,7 @@ function VotacionesPage() {
                 variants={sectionVariants}
             >
                 ¡Tu voto cuenta! Elige a tus favoritos en cada categoría.
-                <span className="block text-sm text-gray-500 mt-2">(Recuerda: Solo un voto por categoría. Se sugiere iniciar sesión para futuras mejoras, aunque no es obligatorio ahora).</span>
+                <span className="block text-sm text-gray-500 mt-2">(Recuerda: Solo un voto por categoría. Puedes cambiar tu selección hasta que estés seguro).</span>
                  <span className="block text-xs text-amber-400/80 mt-3 font-semibold tracking-wider">AVISO: El estado de votación actual solo se guarda en este navegador.</span>
             </motion.p>
 
@@ -200,9 +210,8 @@ function VotacionesPage() {
                             <h2 className="text-3xl font-bold text-center mb-10 text-cyan-300">{awardType}</h2>
                             <div className="space-y-12">
                                 {categoryList.map((category) => {
-                                    // --- CORRECCIÓN: Definir hasVotedInCategory aquí ---
+                                    // Define if user has voted in this category *before* mapping nominees
                                     const hasVotedInCategory = !!userVotes[category.slug];
-                                    // --- FIN CORRECCIÓN ---
 
                                     return (
                                         <motion.div key={category.id} variants={sectionVariants} className="bg-gray-900/50 border border-gray-700/80 rounded-xl p-6 shadow-lg">
@@ -212,29 +221,29 @@ function VotacionesPage() {
                                             {/* Nominees Grid */}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                                                 {(category.nominees ?? []).map((nominee) => {
-                                                    // Calcular isSelected y canVote aquí dentro, usando hasVotedInCategory definida antes
+                                                    // Determine if this specific nominee is the selected one
                                                     const isSelected = userVotes[category.slug] === nominee.nominee_id;
-                                                    const canVote = !hasVotedInCategory;
+                                                    // Voting is always allowed (to change selection)
+                                                    const canVote = true;
 
                                                     return (
                                                         <motion.div
                                                             key={nominee.nominee_id}
                                                             variants={nomineeVariants}
-                                                            className={`relative rounded-lg overflow-hidden border-2 transition-all duration-200 ease-in-out flex flex-col text-center group
+                                                            className={`relative rounded-lg overflow-hidden border-2 transition-all duration-200 ease-in-out flex flex-col text-center group cursor-pointer hover:border-cyan-600 hover:shadow-md
                                                                 ${isSelected ? 'border-cyan-500 shadow-cyan-500/30 shadow-lg scale-105' : 'border-gray-700'}
-                                                                ${canVote ? 'cursor-pointer hover:border-cyan-600 hover:shadow-md' : 'opacity-70 cursor-not-allowed'}
-                                                                ${hasVotedInCategory && !isSelected ? 'opacity-50' : ''}
+                                                                ${!isSelected ? 'hover:opacity-90' : ''} // Subtle hover for non-selected
                                                             `}
-                                                            onClick={canVote ? () => handleVote(category.slug, nominee.nominee_id) : undefined}
-                                                            whileHover={canVote ? { y: -5 } : {}}
-                                                            whileTap={canVote ? { scale: 0.97 } : {}}
+                                                            onClick={() => handleVote(category.slug, nominee.nominee_id)} // Always allow click to vote/change
+                                                            whileHover={{ y: -5 }}
+                                                            whileTap={{ scale: 0.97 }}
                                                         >
                                                             {/* Image */}
                                                             {nominee.nominee_image ? (
                                                                 <img
                                                                     src={nominee.nominee_image}
                                                                     alt={nominee.nominee_name || 'Nominado'}
-                                                                    className="w-full h-40 object-cover bg-gray-700" // Fixed height for consistency
+                                                                    className="w-full h-40 object-cover bg-gray-700" // Fixed height
                                                                     loading="lazy"
                                                                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                                 />
@@ -248,19 +257,19 @@ function VotacionesPage() {
                                                                 </p>
                                                                 {nominee.nominee_extra && <p className="text-xs text-gray-400">{nominee.nominee_extra}</p>}
                                                             </div>
-                                                            {/* Voted Indicator */}
+                                                            {/* Selected Indicator */}
                                                             {isSelected && (
                                                                 <div className="absolute top-1 right-1 bg-cyan-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow">
-                                                                    Votado
+                                                                    Seleccionado
                                                                 </div>
                                                             )}
                                                         </motion.div>
                                                     );
                                                 })}
                                             </div>
-                                            {/* Usar la variable definida antes del map */}
+                                            {/* Message indicating a vote has been cast in this category */}
                                             {hasVotedInCategory && (
-                                                <p className="text-center text-xs text-cyan-400/80 mt-4 font-semibold tracking-wide">Ya has votado en esta categoría.</p>
+                                                <p className="text-center text-xs text-cyan-400/80 mt-4 font-semibold tracking-wide">Has seleccionado una opción en esta categoría (puedes cambiarla).</p>
                                             )}
                                         </motion.div>
                                     );
@@ -277,5 +286,30 @@ function VotacionesPage() {
         </motion.div>
     );
 }
+
+// --- Interfaces (Completas) ---
+interface NomineeData {
+    nominee_id: string;
+    nominee_name?: string;
+    nominee_image?: string;
+    nominee_extra?: string;
+}
+
+interface VotingCategoryData {
+    id: string; // slug from CMS file
+    slug: string;
+    award_type?: string;
+    resolved_category?: string; // The actual category name
+    description?: string;
+    is_active?: boolean;
+    nominees?: NomineeData[];
+    // Raw conditional fields needed temporarily during load
+    category_temporada?: string;
+    category_aspecto?: string;
+    category_actor?: string;
+    category_genero?: string;
+    category_anual?: string;
+}
+
 
 export default VotacionesPage;
