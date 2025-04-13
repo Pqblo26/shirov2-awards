@@ -13,6 +13,16 @@ export default async function handler(
 ) {
   console.log("API Function /api/vote Start");
 
+  // --- VERIFICACIÓN MANUAL DE VARIABLES DE ENTORNO ---
+  console.log("Checking Environment Variables:");
+  console.log(`KV_REST_API_URL Exists: ${!!process.env.KV_REST_API_URL}`); // Log true/false if it exists
+  console.log(`KV_REST_API_TOKEN Exists: ${!!process.env.KV_REST_API_TOKEN}`); // Log true/false if it exists
+  // Opcional: Loguear parte de la URL para confirmar que es la correcta (¡NUNCA loguear el TOKEN completo!)
+  if (process.env.KV_REST_API_URL) {
+    console.log(`KV_REST_API_URL Starts With: ${process.env.KV_REST_API_URL.substring(0, 20)}...`);
+  }
+  // --- FIN VERIFICACIÓN ---
+
   if (req.method !== 'POST') {
     console.log("API Function End - Method Not Allowed");
     res.setHeader('Allow', ['POST']);
@@ -22,11 +32,10 @@ export default async function handler(
   let key: string | undefined;
 
   try {
-    // --- TEST DE CONEXIÓN KV TEMPRANO ---
+    // Test de conexión temprano (lo mantenemos por si acaso)
     console.log("Attempting initial KV connection test (kv.get('test-connection'))");
-    await kv.get('test-connection'); // Intenta una operación simple de lectura
+    await kv.get('test-connection');
     console.log("Initial KV connection test successful.");
-    // --- FIN TEST ---
 
     console.log("Request Body:", req.body);
 
@@ -53,9 +62,8 @@ export default async function handler(
     return res.status(200).json({ message: 'Voto registrado con éxito', nomineeId: nomineeId, categorySlug: categorySlug, newCount: newCount });
 
   } catch (error) {
-    console.error("API Function End - Error Caught:", error); // Mantenemos el log simplificado
+    console.error("API Function End - Error Caught:", error);
     // Devolver respuesta de error
-    // Comprobar si el error es específicamente por las variables de entorno
     if (error instanceof Error && error.message.includes('Missing required environment variables')) {
          return res.status(500).json({ message: 'Error de configuración del servidor: Faltan variables KV.' });
     }
