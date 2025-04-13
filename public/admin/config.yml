@@ -169,87 +169,66 @@ collections:
 
 # ... (backend, media_folder, colección traducciones, colección wip_items) ...
 
-  # --- COLECCIÓN VOTACIONES (Final con Summary Funcional) ---
+  # --- COLECCIÓN VOTACIONES (con Posición Imagen Nominado) ---
   - name: "votaciones"
-    label: "Votaciones / Encuestas" # Etiqueta Final
-    label_singular: "Votación" # Etiqueta Final
+    label: "Votaciones / Encuestas"
+    label_singular: "Votación"
     folder: "content/votaciones"
     create: true
     delete: true
-    slug: "{{slug}}" # Usa el campo slug de abajo
-    # --- SUMMARY: Usando la sintaxis que funcionó ---
-    summary: "{{fields.slug}} ({{fields.award_type}})"
-    # --- FIN SUMMARY ---
+    slug: "{{slug}}"
+    summary: "{{fields.slug}} ({{fields.award_type}})" # Usamos la sintaxis que funcionó
     fields:
-      # Campo slug obligatorio
       - label: "Identificador Corto (Slug)"
         name: "slug"
         widget: "string"
         required: true
         hint: "Identificador único para la URL (usar minúsculas, números, guiones). Ej: mejor-opening-2025"
         pattern: ['^[a-z0-9-]+$', "Usar solo minúsculas, números y guiones"]
-      # Campo Tipo de Premio
       - label: "Tipo de Premio Asociado"
         name: "award_type"
         widget: "select"
         options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año", "Otra"]
         required: true
         hint: "Selecciona el tipo para mostrar la categoría correcta (ignora otros campos de categoría en el editor)."
-
-      # --- Campos condicionales para categoría (required: false, value entre comillas) ---
-      # Recordatorio: Pueden aparecer todos en el editor, rellenar solo el relevante.
-      - label: "Categoría Específica (Temporada)"
+      # --- Campos condicionales para categoría ---
+      # ... (todos los campos category_temporada, etc. van aquí, sin cambios) ...
+      - label: "Categoría Específica (Temporada)" # etc...
         name: "category_temporada"
         widget: "select"
         required: false
-        condition:
-          field: "award_type"
-          value: 'Temporada'
+        condition: { field: "award_type", value: 'Temporada' }
         options: ["Mejor Anime de Invierno", "Mejor Anime de Primavera", "Mejor Anime de Verano", "Mejor Anime de Otoño"]
         hint: "Rellenar solo si el Tipo es 'Temporada'."
-
       - label: "Categoría Específica (Aspecto Técnico)"
         name: "category_aspecto"
         widget: "select"
         required: false
-        condition:
-          field: "award_type"
-          value: 'Aspecto Técnico'
+        condition: { field: "award_type", value: 'Aspecto Técnico' }
         options: ["Mejor Adaptación", "Mejor Animación", "Mejor Banda Sonora", "Mejor Estudio"]
         hint: "Rellenar solo si el Tipo es 'Aspecto Técnico'."
-
       - label: "Categoría Específica (Actor de Voz)"
         name: "category_actor"
         widget: "select"
         required: false
-        condition:
-          field: "award_type"
-          value: 'Actor de Voz'
+        condition: { field: "award_type", value: 'Actor de Voz' }
         options: ["Mejor Actor de Voz", "Mejor Actriz de Voz"]
         hint: "Rellenar solo si el Tipo es 'Actor de Voz'."
-
       - label: "Categoría Específica (Género)"
         name: "category_genero"
         widget: "select"
         required: false
-        condition:
-          field: "award_type"
-          value: 'Género'
+        condition: { field: "award_type", value: 'Género' }
         options: ["Acción", "Aventura", "Comedia", "Drama", "Deporte", "Romance", "SCIFI o Mecha", "Slice of Life", "Supernatural", "Ecchi"]
         hint: "Rellenar solo si el Tipo es 'Género'."
-
       - label: "Categoría Específica (Anual)"
         name: "category_anual"
         widget: "select"
         required: false
-        condition:
-          field: "award_type"
-          value: 'Ganadores del Año'
+        condition: { field: "award_type", value: 'Ganadores del Año' }
         options: ["Mejor Anime del Año", "Mejor Película del Año", "Mejor Chico", "Mejor Chica", "Mejor Pareja", "Mejor Opening", "Mejor Ending"]
         hint: "Rellenar solo si el Tipo es 'Ganadores del Año'."
       # --- Fin Campos condicionales ---
-
-      # --- Otros campos ---
       - label: "Votación Activa"
         name: "is_active"
         widget: "boolean"
@@ -263,16 +242,33 @@ collections:
         name: "nominees"
         widget: "list"
         label_singular: "Nominado"
-        summary: "{{fields.nominee_name}}" # Summary para items de la lista (debería funcionar)
+        summary: "{{fields.nominee_name}}"
         required: true
         min: 2
         hint: "Añade aquí las opciones para votar en esta categoría."
-        fields:
+        fields: # Campos para CADA nominado
           - { label: "ID Único del Nominado", name: "nominee_id", widget: "string", required: true, hint: "Un ID simple y único para esta opción (ej: anime-01, op-abc)." }
           - { label: "Nombre del Nominado", name: "nominee_name", widget: "string", required: true, hint: "Nombre del anime, personaje, canción, etc." }
           - { label: "Imagen del Nominado", name: "nominee_image", widget: "image", required: false }
+          # --- CAMPO AÑADIDO PARA POSICIÓN DE IMAGEN ---
+          - label: "Posición Imagen (Opcional)"
+            name: "image_position_select"
+            widget: "select"
+            required: false
+            default: "center center" # Valor por defecto si no se elige
+            options:
+              - { label: "Centro", value: "center center" }
+              - { label: "Arriba", value: "center top" }
+              - { label: "Centro-Arriba", value: "center 25%" }
+              - { label: "Abajo", value: "center bottom" }
+              - { label: "Izquierda", value: "left center" }
+              - { label: "Derecha", value: "right center" }
+              - { label: "Esquina Sup. Izq.", value: "left top" }
+              - { label: "Esquina Sup. Der.", value: "right top" }
+              - { label: "Esquina Inf. Izq.", value: "left bottom" }
+              - { label: "Esquina Inf. Der.", value: "right bottom" }
+            hint: "Ajusta qué parte de la imagen se ve si esta se recorta."
+          # --- FIN CAMPO AÑADIDO ---
           - { label: "Info Extra (Opcional)", name: "nominee_extra", widget: "string", required: false, hint: "Ej: Estudio, Artista, Personaje..." }
 
 # ... (colección premios) ...
-
-
