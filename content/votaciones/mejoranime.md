@@ -1,7 +1,7 @@
 ---
 slug: dfgdgfdgfd
 award_type: Temporada
-category_temporada: Mejor Anime de Primavera
+category_temporada: Mejor Anime de Otoño
 is_active: true
 description: SDFSDFDSFDS
 nominees:
