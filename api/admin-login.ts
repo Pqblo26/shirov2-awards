@@ -1,14 +1,11 @@
 // api/admin-login.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-// --- MODIFICADO: Importar 'ironSession' y 'IronSessionOptions' ---
-import { ironSession, type IronSessionOptions } from 'iron-session';
+// --- MODIFICADO: Volver a importar el wrapper ---
+import { withIronSessionApiRoute } from 'iron-session/next';
 // --- FIN MODIFICACIÓN ---
+import type { IronSessionOptions } from 'iron-session'; // Mantenemos la importación del TIPO
 
-// --- ELIMINADO: Import de sessionOptions desde archivo externo ---
-// import { sessionOptions } from '../src/lib/session';
-
-// --- AÑADIDO: Declaración del módulo para tipos de sesión ---
-// (Necesario aquí si session.ts ya no se importa o se elimina)
+// Declaración del módulo para tipos de sesión
 declare module 'iron-session' {
   interface IronSessionData {
     user?: {
@@ -16,42 +13,39 @@ declare module 'iron-session' {
     };
   }
 }
-// --- FIN AÑADIDO ---
 
-// --- AÑADIDO: Definición de sessionOptions directamente aquí ---
+// Definición de sessionOptions (se queda aquí)
 const sessionOptions: IronSessionOptions = {
-  // ¡MUY IMPORTANTE! Usa la variable de entorno que creaste.
-  // Debe ser una cadena secreta larga y compleja (mínimo 32 caracteres).
-  password: process.env.SESSION_PASSWORD as string, // Asegúrate que SESSION_PASSWORD está en Vercel Env Vars
-  cookieName: 'shiro-nexus-admin-session', // Nombre de la cookie
-  // Configuración recomendada para cookies seguras en producción
+  password: process.env.SESSION_PASSWORD as string,
+  cookieName: 'shiro-nexus-admin-session',
   cookieOptions: {
-    secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
-    httpOnly: true, // No accesible por JavaScript del cliente
-    sameSite: 'lax', // Protección CSRF
-    maxAge: 60 * 60 * 24 * 7 // Duración: 7 días (en segundos)
-    // path: '/', // Opcional: define el path de la cookie
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7 // 7 days
   },
 };
-// --- FIN AÑADIDO ---
-
 
 // Define la estructura esperada del cuerpo de la petición
 interface LoginPayload {
   password?: string;
 }
 
-// Exportamos la función handler directamente
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    console.log("API Function /api/admin-login Start");
+// --- MODIFICADO: Envolvemos la función loginRoute con el wrapper ---
+export default withIronSessionApiRoute(loginRoute, sessionOptions);
+// --- FIN MODIFICACIÓN ---
 
-    // Verificar Variables de Entorno (Opcional, quitar si ya funciona)
+// La lógica principal ahora está en esta función separada
+async function loginRoute(req: VercelRequest, res: VercelResponse) {
+    // La sesión ahora está disponible en req.session gracias al wrapper
+    console.log("API Function /api/admin-login Start (withIronSession)");
+
+    // Verificar Variables de Entorno (Opcional)
     console.log("Checking Environment Variables:");
     console.log(`TEST_VAR Value: ${process.env.TEST_VAR}`);
-    console.log(`ADMIN_PASSWORD Exists: ${!!process.env.ADMIN_PASSWORD}`); // Verificar la contraseña de admin
-    console.log(`SESSION_PASSWORD Exists: ${!!process.env.SESSION_PASSWORD}`); // Verificar la contraseña de sesión
-    console.log(`KV_REST_API_URL Exists: ${!!process.env.KV_REST_API_URL}`);
-    console.log(`KV_REST_API_TOKEN Exists: ${!!process.env.KV_REST_API_TOKEN}`);
+    console.log(`ADMIN_PASSWORD Exists: ${!!process.env.ADMIN_PASSWORD}`);
+    console.log(`SESSION_PASSWORD Exists: ${!!process.env.SESSION_PASSWORD}`);
+    // ... (otros logs de KV si los necesitas) ...
 
     // Solo permitir POST
     if (req.method !== 'POST') {
@@ -61,9 +55,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        // Obtener la sesión usando las opciones definidas arriba
-        const session = await ironSession(req, res, sessionOptions);
-
         console.log("Request Body:", req.body);
 
         if (typeof req.body !== 'object' || req.body === null) {
@@ -76,25 +67,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Comprobar si la contraseña coincide con la variable de entorno ADMIN_PASSWORD
         if (password && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
             // Contraseña correcta: Crear la sesión
-            session.user = {
+            // --- MODIFICADO: Usar req.session ---
+            req.session.user = {
                 isAdmin: true,
             };
-            await session.save(); // Guardar la sesión
+            await req.session.save(); // Guardar la sesión
+            // --- FIN MODIFICACIÓN ---
             console.log("Admin login successful, session saved.");
             return res.status(200).json({ message: 'Login successful' });
         } else {
             // Contraseña incorrecta o no proporcionada
             console.log("Admin login failed: Incorrect or missing password.");
+            // Destruir cualquier sesión existente si el login falla (opcional pero bueno para seguridad)
+            await req.session.destroy();
             return res.status(401).json({ message: 'Contraseña incorrecta' });
         }
 
     } catch (error) {
         console.error("API Function End - Error Caught:", error);
         // Devolver respuesta de error genérico
-        // Ya no debería dar error de módulo no encontrado, pero mantenemos la comprobación KV por si acaso
         if (error instanceof Error && error.message.includes('Missing required environment variables')) {
              return res.status(500).json({ message: 'Error de configuración del servidor: Faltan variables KV.' });
         }
+        // Devolver error genérico si no es uno específico
         return res.status(500).json({ message: 'Error interno al procesar el login' });
     }
 }
