@@ -248,7 +248,6 @@ function VotacionesPage() {
                 >
                     ¡Tu voto cuenta! Elige a tus favoritos en cada categoría.
                     <span className="block text-sm text-gray-500 mt-3">(Recuerda: Solo un voto por categoría. Puedes cambiar tu selección hasta que confirmes).</span>
-                    <span className="block text-sm text-amber-500/90 mt-3 font-medium tracking-wide">AVISO: El estado de votación actual solo se guarda en este navegador.</span>
                 </motion.p>
 
                 {/* Loading / Error / No Data States */}
