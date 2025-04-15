@@ -22,7 +22,7 @@
         httpOnly: true, // No accesible por JavaScript del cliente
         sameSite: 'lax', // Protección CSRF
         maxAge: 60 * 60 * 24 * 7 // Duración: 7 días (en segundos)
-        // path: '/', // Opcional: define el path de la cookie
+        // path: '/', // Opcional: define el path de la cooki
       },
     };
     
