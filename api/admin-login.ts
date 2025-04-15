@@ -1,20 +1,26 @@
 // api/admin-login.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-// --- MODIFICADO: Importar 'ironSession' directamente ---
 import { ironSession } from 'iron-session';
+// --- MODIFICADO: Ruta de importación corregida (asume session.ts está en api/_lib/) ---
+import { sessionOptions } from './_lib/session';
 // --- FIN MODIFICACIÓN ---
-import { sessionOptions } from '../src/lib/session'; // Usamos la ruta corregida
 
 // Define la estructura esperada del cuerpo de la petición
 interface LoginPayload {
   password?: string;
 }
 
-// --- MODIFICADO: Exportamos la función handler directamente ---
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-// --- FIN MODIFICACIÓN ---
-
     console.log("API Function /api/admin-login Start");
+
+    // Verificar Variables de Entorno (lo mantenemos por si acaso)
+    console.log("Checking Environment Variables:");
+    console.log(`TEST_VAR Value: ${process.env.TEST_VAR}`); // Test variable
+    console.log(`KV_REST_API_URL Exists: ${!!process.env.KV_REST_API_URL}`);
+    console.log(`KV_REST_API_TOKEN Exists: ${!!process.env.KV_REST_API_TOKEN}`);
+    if (process.env.KV_REST_API_URL) {
+        console.log(`KV_REST_API_URL Starts With: ${process.env.KV_REST_API_URL.substring(0, 20)}...`);
+    }
 
     // Solo permitir POST
     if (req.method !== 'POST') {
@@ -24,9 +30,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        // --- MODIFICADO: Obtener la sesión aquí ---
+        // Obtener la sesión
         const session = await ironSession(req, res, sessionOptions);
-        // --- FIN MODIFICACIÓN ---
 
         console.log("Request Body:", req.body);
 
@@ -40,12 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Comprobar si la contraseña coincide con la variable de entorno
         if (password && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
             // Contraseña correcta: Crear la sesión
-            // --- MODIFICADO: Usar 'session' en lugar de 'req.session' ---
             session.user = {
                 isAdmin: true,
             };
             await session.save(); // Guardar la sesión
-            // --- FIN MODIFICACIÓN ---
             console.log("Admin login successful, session saved.");
             return res.status(200).json({ message: 'Login successful' });
         } else {
@@ -57,6 +60,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (error) {
         console.error("API Function End - Error Caught:", error);
         // Devolver respuesta de error genérico
+        // Comprobar si el error es específicamente por las variables de entorno KV
+         if (error instanceof Error && error.message.includes('Missing required environment variables')) {
+             return res.status(500).json({ message: 'Error de configuración del servidor: Faltan variables KV.' });
+         }
         return res.status(500).json({ message: 'Error interno al procesar el login' });
     }
 }
