@@ -11,15 +11,17 @@ import {
 import MainLayout from './layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import PremiosPage from './pages/PremiosPage';
-import VotacionesPage from './pages/VotacionesPage'; // Sigue comentado
+import VotacionesPage from './pages/VotacionesPage'; // Asegúrate que esta ruta está descomentada si la necesitas activa
 import TraduccionesPage from './pages/TraduccionesPage';
 import SingleTranslationPage from './pages/SingleTranslationPage';
-import AboutMePage from './pages/AboutMePage'; // Importar la nueva página
-// import LoginPage from './pages/LoginPage'; // Sigue comentado
-// import AdminPage from './pages/AdminPage'; // Sigue comentado
+import AboutMePage from './pages/AboutMePage';
 import NotFoundPage from './pages/NotFoundPage';
+// --- AÑADIDO: Imports para Admin ---
+import AdminLoginPage from './pages/AdminLoginPage'; // Nueva página de login admin
+import AdminPage from './pages/AdminPage'; // Nueva página de panel admin
+// --- FIN AÑADIDO ---
 
-// Importa nuestro componente manual
+// Importa helpers
 import ScrollToTop from './components/ScrollToTop';
 
 import './index.css'; // Global styles
@@ -28,22 +30,31 @@ import './index.css'; // Global styles
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <MainLayout />,
+    element: <MainLayout />, // MainLayout envuelve las rutas hijas
     children: [
       { index: true, element: <HomePage /> },
       { path: 'premios', element: <PremiosPage /> },
       { path: 'traducciones', element: <TraduccionesPage /> },
       { path: 'traducciones/:filename', element: <SingleTranslationPage /> },
-      // --- RUTA AÑADIDA ---
       { path: 'sobre-mi', element: <AboutMePage /> },
-      // --- FIN RUTA AÑADIDA ---
-      // --- Otras rutas siguen comentadas ---
-      { path: 'votaciones', element: <VotacionesPage /> },
-      // { path: 'login', element: <LoginPage /> },
-      // { path: 'admin', element: <AdminPage /> },
+      { path: 'votaciones', element: <VotacionesPage /> }, // Ruta de votaciones (descomentada)
+      // --- AÑADIDO: Ruta Panel Admin (dentro del Layout principal por ahora) ---
+      // Más adelante añadiremos un guardián para protegerla
+      { path: 'admin', element: <AdminPage /> },
+      // --- FIN AÑADIDO ---
+      // --- Otras rutas comentadas ---
+      // { path: 'contacto', element: <ContactoPage /> }, // Reemplazada por sobre-mi
+      // { path: 'login', element: <LoginPage /> }, // Login de usuario normal (omitido por ahora)
     ],
   },
-  // Catch-all 404 route
+  // --- AÑADIDO: Ruta Login Admin (fuera de MainLayout) ---
+  {
+    path: '/admin-login',
+    element: <AdminLoginPage />,
+  },
+  // --- FIN AÑADIDO ---
+
+  // Catch-all 404 route (Debe ir al final)
    { path: '*', element: <NotFoundPage /> }
 ]);
 

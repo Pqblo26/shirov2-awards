@@ -1,37 +1,26 @@
 import React, { useEffect } from 'react';
-// Import the hook created in MainLayout to access the context
-import { useAdminMode } from '../layouts/MainLayout';
 
 function AdminPage() {
-    // Access the isAdminMode state passed down from the layout via context
-    const { isAdminMode } = useAdminMode();
 
     useEffect(() => {
         document.title = "Panel Admin | Shiro Nexus";
+        // Aquí iría la lógica para verificar la sesión antes de mostrar contenido,
+        // o se haría en un componente guardián.
     }, []);
 
-    // Basic check - Real security should be handled server-side and/or in routing loaders
-    if (!isAdminMode) {
-        return (
-             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <h1 className="text-3xl font-bold text-center text-red-500 mb-8">Acceso Denegado</h1>
-                <p className="text-center text-gray-400">
-                    No tienes permiso para acceder a esta página.
-                </p>
-            </div>
-        )
-    }
+    // TODO: Añadir protección de ruta y contenido real del panel
 
-    // Render admin content if admin mode is active
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h1 className="text-3xl font-bold text-center mb-8">Panel de Administración</h1>
-            <p className="text-center text-gray-400">
-                Contenido del panel de administración irá aquí...
-            </p>
-            {/* Add admin tools/components later */}
+            <h1 className="text-3xl font-bold text-white mb-6">Panel de Administración</h1>
+            <div className="bg-gray-800 p-6 rounded-lg shadow">
+                <p className="text-gray-300">Bienvenido al panel. Próximamente aquí podrás gestionar ajustes del sitio.</p>
+                {/* Añadir aquí botones/interruptores para ajustes */}
+                 {/* Por ejemplo: <button>Ocultar Premios</button> */}
+                 {/* O: <button>Ver Resultados Votaciones</button> */}
+            </div>
         </div>
     );
 }
 
-export default AdminPage; // Default export
+export default AdminPage;
