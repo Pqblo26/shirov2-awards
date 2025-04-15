@@ -1,8 +1,8 @@
 // api/admin-login.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ironSession } from 'iron-session';
-// --- MODIFICADO: Ruta de importación corregida (asume session.ts está en api/_lib/) ---
-import { sessionOptions } from './_lib/session';
+// --- MODIFICADO: Ruta de importación vuelve a apuntar fuera de /api ---
+import { sessionOptions } from '../src/lib/session';
 // --- FIN MODIFICACIÓN ---
 
 // Define la estructura esperada del cuerpo de la petición
@@ -60,10 +60,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (error) {
         console.error("API Function End - Error Caught:", error);
         // Devolver respuesta de error genérico
-        // Comprobar si el error es específicamente por las variables de entorno KV
-         if (error instanceof Error && error.message.includes('Missing required environment variables')) {
+        if (error instanceof Error && error.message.includes('Missing required environment variables')) {
              return res.status(500).json({ message: 'Error de configuración del servidor: Faltan variables KV.' });
-         }
+        }
+        // Añadir comprobación para el error de módulo no encontrado, aunque debería solucionarse
+        if (error instanceof Error && error.message.includes('Cannot find module')) {
+             console.error("VERCEL BUILD ERROR: Cannot find imported module. Check file paths and Vercel deployment settings.");
+             return res.status(500).json({ message: 'Error interno del servidor: Módulo no encontrado durante ejecución.' });
+        }
         return res.status(500).json({ message: 'Error interno al procesar el login' });
     }
 }
