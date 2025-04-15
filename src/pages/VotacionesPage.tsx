@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // Importar AnimatePresence
 import matter from 'gray-matter';
 import ScrollToTopButton from '../components/ScrollToTopButton';
-import { CheckCircle, Circle, Award, Tv, MicVocal, Library, Users, Code, Wind, Database, Feather } from 'lucide-react';
+// Importar Loader2 para el spinner
+import { CheckCircle, Circle, Award, Tv, MicVocal, Library, Users, Code, Wind, Database, Feather, Loader2 } from 'lucide-react';
 
 // --- Interfaces ---
 interface NomineeData {
@@ -52,10 +53,12 @@ function VotacionesPage() {
     // --- State ---
     const [categories, setCategories] = useState<VotingCategoryData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null); // General loading error
     const [selectedVotes, setSelectedVotes] = useState<VotesState>({}); // Votos temporales
     const [userVotes, setUserVotes] = useState<VotesState>({}); // Votos confirmados (leídos de localStorage para UI)
     const [isSubmitting, setIsSubmitting] = useState(false); // Estado para indicar envío API
+    // --- AÑADIDO: Estado para mensajes de feedback ---
+    const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     // --- Effects ---
     useEffect(() => { document.title = "Votaciones | Shiro Nexus"; }, []);
@@ -132,6 +135,16 @@ function VotacionesPage() {
         loadVotingData();
      }, []);
 
+     // --- Effect to clear feedback message after a delay ---
+     useEffect(() => {
+        if (feedbackMessage) {
+            const timer = setTimeout(() => {
+                setFeedbackMessage(null);
+            }, 5000); // Hide after 5 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [feedbackMessage]);
+
     // --- Group Categories by Type ---
     const groupedCategories = useMemo(() => {
         const groups: { [key: string]: VotingCategoryData[] } = {};
@@ -153,72 +166,49 @@ function VotacionesPage() {
     // --- Handle Selecting a Nominee ---
     const handleSelectNominee = (categorySlug: string, nomineeId: string) => {
         if (userVotes[categorySlug]) return; // Do nothing if already confirmed
+        setFeedbackMessage(null); // Clear feedback when selection changes
         setSelectedVotes(prev => ({ ...prev, [categorySlug]: prev[categorySlug] === nomineeId ? null : nomineeId }));
     };
 
-    // --- Handle Confirming All Selections (MODIFIED to call API) ---
+    // --- Handle Confirming All Selections (MODIFIED for feedback) ---
     const handleConfirmVotes = async () => {
-        setIsSubmitting(true); // Indicar que se están enviando
-        setError(null); // Limpiar errores previos
+        setIsSubmitting(true);
+        setFeedbackMessage(null); // Clear previous feedback
+        // setError(null); // Clear general error as well? Maybe not, keep it for loading errors.
 
-        const votesToSubmit = { ...selectedVotes }; // Copia de los votos seleccionados
-        const votePromises: Promise<Response>[] = []; // Array para guardar las promesas de fetch
+        const votesToSubmit = { ...selectedVotes };
+        const votePromises: Promise<Response>[] = [];
 
-        // Crear una petición fetch para cada voto seleccionado
         for (const categorySlug in votesToSubmit) {
             const nomineeId = votesToSubmit[categorySlug];
-            if (nomineeId) { // Asegurarse de que hay un nominado seleccionado
-                console.log(`Preparando voto: ${categorySlug} -> ${nomineeId}`);
-                votePromises.push(
-                    fetch('/api/vote', { // Llama a nuestra serverless function
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ categorySlug, nomineeId }), // Envía los datos
-                    })
-                );
+            if (nomineeId) {
+                votePromises.push( fetch('/api/vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ categorySlug, nomineeId }) }) );
             }
         }
 
         try {
-            // Esperar a que todas las peticiones terminen
             const results = await Promise.all(votePromises);
-
-            // Verificar si todas las respuestas fueron exitosas (status 2xx)
             const allSucceeded = results.every(res => res.ok);
 
             if (allSucceeded) {
-                // Si todo OK:
-                // 1. Actualizar el estado de votos confirmados (para la UI)
                 const newConfirmedVotes = { ...userVotes, ...votesToSubmit };
-                // Filtrar nulls por si acaso (aunque no debería haberlos aquí)
-                 Object.keys(newConfirmedVotes).forEach(key => { if (newConfirmedVotes[key] === null) delete newConfirmedVotes[key]; });
+                Object.keys(newConfirmedVotes).forEach(key => { if (newConfirmedVotes[key] === null) delete newConfirmedVotes[key]; });
                 setUserVotes(newConfirmedVotes);
-
-                // 2. Guardar en localStorage (para recordar en la UI)
                 localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(newConfirmedVotes));
-
-                // 3. Limpiar selecciones temporales
                 setSelectedVotes({});
-
-                // 4. Mensaje al usuario
-                alert("¡Votos registrados con éxito!"); // Mejorar con un toast/modal real
-
+                // --- USAR setFeedbackMessage en lugar de alert ---
+                setFeedbackMessage({ type: 'success', message: '¡Votos registrados con éxito!' });
             } else {
-                // Si alguna petición falló
                 console.error('Algunos votos no se pudieron registrar:', results);
-                setError("Error al registrar algunos votos. Inténtalo de nuevo.");
-                // Nota: Aquí podríamos intentar reintentar solo los fallidos, pero es más complejo.
-                // Por ahora, simplemente mostramos un error general.
+                // --- USAR setFeedbackMessage en lugar de alert ---
+                setFeedbackMessage({ type: 'error', message: 'Error al registrar algunos votos. Inténtalo de nuevo.' });
             }
-
         } catch (fetchError) {
-            // Error de red o similar
             console.error('Error al enviar los votos:', fetchError);
-            setError("Error de red al enviar los votos. Comprueba tu conexión.");
+             // --- USAR setFeedbackMessage en lugar de alert ---
+            setFeedbackMessage({ type: 'error', message: 'Error de red al enviar los votos. Comprueba tu conexión.' });
         } finally {
-            setIsSubmitting(false); // Terminar estado de envío
+            setIsSubmitting(false);
         }
     };
     // --- FIN MODIFICACIÓN ---
@@ -236,12 +226,12 @@ function VotacionesPage() {
     const hasPendingSelections = Object.values(selectedVotes).some(vote => vote !== null);
 
     return (
-        // --- Main Container: Con fondo y sin max-width ---
+        // Main Container with background and full width
         <motion.div
             className="min-h-screen w-full px-4 sm:px-6 lg:px-8 py-20 md:py-28 bg-gray-950"
             variants={containerVariants} initial="hidden" animate="visible" exit="hidden"
         >
-            {/* --- Inner Centering Container --- */}
+            {/* Inner Centering Container */}
             <div className="max-w-7xl mx-auto">
 
                 {/* Page Title */}
@@ -292,7 +282,7 @@ function VotacionesPage() {
                                                 <motion.div
                                                     key={category.id}
                                                     variants={sectionVariants}
-                                                    className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 md:p-10 shadow-lg"
+                                                    className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 md:p-10 shadow-lg" // Borde simple gris
                                                 >
                                                     {/* Category Title - Blanco */}
                                                     <h3 className="text-2xl md:text-3xl font-bold text-center mb-6 text-white">{category.resolved_category}</h3>
@@ -359,37 +349,63 @@ function VotacionesPage() {
                     </div>
                 )} {/* End main conditional rendering block */}
 
-                {/* --- Confirmation Button --- */}
-                {hasPendingSelections && (
-                     <motion.div
-                        className="mt-24 text-center"
-                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-                     >
-                        <button
-                            onClick={handleConfirmVotes}
-                            className="px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-lg rounded-lg shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-300/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105"
-                            disabled={isSubmitting} // Deshabilitar mientras se envía
-                        >
-                            {isSubmitting ? 'Enviando...' : 'Confirmar Mis Votos Seleccionados'}
-                        </button>
-                        <p className="text-sm text-gray-500/90 mt-4">
+                 {/* --- Confirmation Button Area --- */}
+                 {/* Added min-height to prevent layout shift when button/message appears/disappears */}
+                 <div className="mt-24 text-center min-h-[6rem]">
+                    <AnimatePresence>
+                        {hasPendingSelections && !isSubmitting && ( // Show button only if pending and not submitting
+                             <motion.div
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                             >
+                                <button
+                                    onClick={handleConfirmVotes}
+                                    className="inline-flex items-center justify-center gap-2 px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-lg rounded-lg shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-300/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105"
+                                    disabled={isSubmitting}
+                                >
+                                    {/* Spinner añadido aquí */}
+                                    {isSubmitting && <Loader2 size={20} className="animate-spin -ml-1 mr-2" />}
+                                    {isSubmitting ? 'Enviando...' : 'Confirmar Mis Votos Seleccionados'}
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Indicador de Carga/Feedback */}
+                    <AnimatePresence>
+                        {isSubmitting && ( // Mostrar texto de envío solo si no hay mensaje de feedback aún
+                            !feedbackMessage &&
+                            <motion.div
+                                className="flex items-center justify-center gap-2 mt-4 text-blue-300"
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            >
+                                <Loader2 size={20} className="animate-spin" />
+                                <span>Enviando votos...</span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                       {feedbackMessage && (
+                            <motion.div
+                                key={feedbackMessage.message} // Key to re-trigger animation on message change
+                                className={`mt-4 px-4 py-2 rounded-md text-sm font-medium inline-block ${
+                                    feedbackMessage.type === 'success' ? 'bg-green-600/80 text-white' : 'bg-red-600/80 text-white'
+                                }`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                            >
+                                {feedbackMessage.message}
+                            </motion.div>
+                       )}
+                    </AnimatePresence>
+
+                    {/* Subtexto del botón */}
+                    {hasPendingSelections && !isSubmitting && (
+                         <p className="text-sm text-gray-500/90 mt-4">
                             (Los votos confirmados se guardarán solo en este navegador)
                         </p>
-                    </motion.div>
-                )}
-                 {/* Indicador de envío */}
-                 {isSubmitting && !error && ( // Mostrar solo si está enviando y no hay error
-                         <div className="mt-24 text-center text-lg text-blue-300">
-                            Registrando votos...
-                         </div>
-                 )}
-                 {/* Mostrar error de envío si existe */}
-                 {error && !isLoading && ( // Mostrar solo si hay error de envío y no está cargando datos iniciales
-                        <div className="mt-24 text-center">
-                            <ErrorIndicator message={error} />
-                        </div>
-                 )}
-
+                    )}
+                </div>
 
                 <ScrollToTopButton />
 
