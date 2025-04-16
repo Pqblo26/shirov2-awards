@@ -10,8 +10,8 @@ function AdminLoginPage() {
 
     useEffect(() => {
         document.title = "Admin Login | Shiro Nexus";
-        // Podríamos añadir una comprobación aquí para redirigir si ya hay sesión,
-        // pero lo haremos con protección de ruta más adelante.
+        // Limpiar token antiguo al cargar la página de login (opcional)
+        localStorage.removeItem('admin_token');
     }, []);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -20,19 +20,25 @@ function AdminLoginPage() {
         setError(null);
 
         try {
-            const response = await fetch('/api/admin-login', { // Llama a la API que crearemos
+            const response = await fetch('/api/admin-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password }),
             });
 
-            if (response.ok) {
-                // Éxito, redirigir al panel de admin
-                navigate('/admin'); // O a donde quieras que vaya después del login
+            const data = await response.json(); // Leer la respuesta JSON
+
+            if (response.ok && data.success && data.token) {
+                // --- MODIFICADO: Guardar token en localStorage ---
+                localStorage.setItem('admin_token', data.token);
+                console.log("Token guardado en localStorage.");
+                // --- FIN MODIFICACIÓN ---
+
+                // Redirigir al panel de admin
+                navigate('/admin');
             } else {
-                // Error de autenticación
-                const data = await response.json();
-                setError(data.message || 'Contraseña incorrecta.');
+                // Error de autenticación o respuesta inesperada
+                setError(data.message || 'Contraseña incorrecta o error del servidor.');
             }
         } catch (err) {
             console.error("Login error:", err);
