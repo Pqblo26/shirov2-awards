@@ -1,8 +1,9 @@
-# Configuración del Backend
+# Configuración del Backend - MODIFICADO para Git Gateway
 backend:
-  name: github
-  repo: Pqblo26/shirov2-awards
-  branch: main
+  name: git-gateway # Cambiado de 'github' a 'git-gateway'
+  # repo: Pqblo26/shirov2-awards # Ya no es necesario con git-gateway
+  # branch: main # Ya no es necesario con git-gateway
+  # Asegúrate de que la integración de Vercel con GitHub esté activa en los ajustes del proyecto.
 
 # Configuración de Media
 media_folder: "public/images/uploads"
@@ -21,7 +22,13 @@ collections:
       - { label: "Título", name: "title", widget: "string" }
       - { label: "Fecha de Publicación", name: "date", widget: "datetime" }
       - { label: "Imagen Destacada", name: "imageUrl", widget: "image", required: false }
-      - { label: "Tags (Adicionales)", name: "tags", widget: "list", summary: "{{fields.tag}}", field: {label: Tag, name: tag, widget: string}, required: false, hint: "Tags extra aparte de estado, categoría, formato, etc." }
+      - label: "Tags (Adicionales)"
+        name: "tags"
+        widget: "list"
+        summary: "{{fields.tag}}"
+        required: false
+        hint: "Tags extra aparte de estado, categoría, formato, etc."
+        field: {label: Tag, name: tag, widget: string}
       - { label: "Estado (General)", name: "status", widget: "select", options: ["En Progreso", "Finalizado", "Pausado", "Cancelado", "Próximamente"], required: false }
       - { label: "Categoría Principal", name: "mainCategory", widget: "select", options: ["Anime", "Donghua", "Otros"], required: false }
       - { label: "Formato (TV/Película/OVA...)", name: "format_select", widget: "select", options: ["TV", "OVA", "Especial", "Película", "Otro"], required: false }
@@ -41,7 +48,21 @@ collections:
         hint: "Ej: 12, 24 + OVA, Película, En emisión"
       - { label: "Sinopsis / Extracto Corto", name: "excerpt", widget: "text", required: false }
       - { label: "Recursos Externos", name: "externalResources", widget: "string", required: false, hint: "Enlace a web oficial, MyAnimeList, etc. o N/A" }
-      - { label: "Enlaces de Descarga", name: "downloads", widget: "list", label_singular: "Enlace de Descarga", summary: "{{fields.quality_select}} [{{fields.format_select}}] - {{fields.server_select}}", required: false, fields: [ { label: "Calidad", name: "quality_select", widget: "select", options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"], required: false }, { label: "Especificar Otra Calidad", name: "quality_other", widget: "string", required: false, condition: { field: "quality_select", value: "Otro" } }, { label: "Formato (Archivo)", name: "format_select", widget: "select", options: ["MKV", "MP4", "AVI", "Otro"], required: false }, { label: "Especificar Otro Formato Archivo", name: "format_other", widget: "string", required: false, condition: { field: "format_select", value: "Otro" } }, { label: "Servidor", name: "server_select", widget: "select", options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"], required: false }, { label: "Especificar Otro Servidor", name: "server_other", widget: "string", required: false, condition: { field: "server_select", value: "Otro" } }, { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" }, { label: "Notas Adicionales", name: "notes", widget: "string", required: false, hint: "Ej: v2, Parche, Incluye extras" } ] }
+      - label: "Enlaces de Descarga"
+        name: "downloads"
+        widget: "list"
+        label_singular: "Enlace de Descarga"
+        summary: "{{fields.quality_select}} [{{fields.format_select}}] - {{fields.server_select}}"
+        required: false
+        fields:
+          - { label: "Calidad", name: "quality_select", widget: "select", options: ["1080p", "720p", "480p", "BD", "Web-DL", "Otro"], required: false }
+          - { label: "Especificar Otra Calidad", name: "quality_other", widget: "string", required: false, condition: { field: "quality_select", value: "Otro" } }
+          - { label: "Formato (Archivo)", name: "format_select", widget: "select", options: ["MKV", "MP4", "AVI", "Otro"], required: false }
+          - { label: "Especificar Otro Formato Archivo", name: "format_other", widget: "string", required: false, condition: { field: "format_select", value: "Otro" } }
+          - { label: "Servidor", name: "server_select", widget: "select", options: ["Mega", "Google Drive", "OneDrive", "Torrent", "Descarga Directa", "Pixeldrain", "Otro"], required: false }
+          - { label: "Especificar Otro Servidor", name: "server_other", widget: "string", required: false, condition: { field: "server_select", value: "Otro" } }
+          - { label: "URL", name: "url", widget: "string", hint: "El enlace directo de descarga o magnet link" }
+          - { label: "Notas Adicionales", name: "notes", widget: "string", required: false, hint: "Ej: v2, Parche, Incluye extras" }
       - { label: "Contenido Principal (Markdown)", name: "body", widget: "markdown", required: false }
 
   # --- Colección WIP Items ---
@@ -78,21 +99,21 @@ collections:
       - { label: "Orden (Opcional)", name: "order", widget: "number", required: false, value_type: "int", hint: "Número para ordenar manually (menor aparece primero). Si no se usa, se ordenará por defecto." }
       - { label: "Fecha Creación (Automática)", name: "date", widget: "datetime", default: "", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, required: false, hide: true }
 
-  # --- COLECCIÓN PREMIOS (Corregida) ---
+  # --- COLECCIÓN PREMIOS ---
   - name: "premios"
     label: "Premios Shiro Awards"
     label_singular: "Premio"
     folder: "content/premios"
     create: true
     delete: true
-    slug: "{{fields.winner_name}}" # Slug usa nombre del ganador
-    summary: "{{award_type}} - {{winner_name}}" # Summary actualizado
+    slug: "{{fields.winner_name}}" # Mantenemos fields. si funcionaba antes
+    summary: "{{award_type}} - {{winner_name}}"
     fields:
       - label: "Tipo de Premio"
         name: "award_type"
         widget: "select"
         options: ["Temporada", "Aspecto Técnico", "Actor de Voz", "Género", "Ganadores del Año"]
-        required: false
+        required: true
         hint: "Clasifica el premio para agruparlo y mostrar las categorías correctas."
       # --- Campos condicionales para categoría ---
       - label: "Categoría Específica (Temporada)"
@@ -139,13 +160,11 @@ collections:
         widget: "string"
         required: false
         hint: "Ej: Estudio MAPPA, Personaje Ejemplo"
-      # --- CAMPO AÑADIDO ---
       - label: "URL Más Información (Opcional)"
         name: "info_url"
         widget: "string"
         required: false
         hint: "Enlace externo (ej: MyAnimeList, AniList, web oficial) para el botón 'Ver info'."
-      # --- FIN CAMPO AÑADIDO ---
       - label: "Color de la Tarjeta"
         name: "display_color"
         widget: "select"
@@ -165,11 +184,9 @@ collections:
         widget: "number"
         required: false
         value_type: "int"
-        hint: "Número para ordenar manualmente dentro de cada tipo (menor aparece primero)."
+        hint: "Número para ordenar manually dentro de cada tipo (menor aparece primero)."
 
-# ... (backend, media_folder, colección traducciones, colección wip_items) ...
-
-  # --- COLECCIÓN VOTACIONES (con Posición Imagen Nominado) ---
+  # --- COLECCIÓN VOTACIONES ---
   - name: "votaciones"
     label: "Votaciones / Encuestas"
     label_singular: "Votación"
@@ -192,8 +209,7 @@ collections:
         required: true
         hint: "Selecciona el tipo para mostrar la categoría correcta (ignora otros campos de categoría en el editor)."
       # --- Campos condicionales para categoría ---
-      # ... (todos los campos category_temporada, etc. van aquí, sin cambios) ...
-      - label: "Categoría Específica (Temporada)" # etc...
+      - label: "Categoría Específica (Temporada)"
         name: "category_temporada"
         widget: "select"
         required: false
@@ -246,16 +262,15 @@ collections:
         required: true
         min: 2
         hint: "Añade aquí las opciones para votar en esta categoría."
-        fields: # Campos para CADA nominado
+        fields:
           - { label: "ID Único del Nominado", name: "nominee_id", widget: "string", required: true, hint: "Un ID simple y único para esta opción (ej: anime-01, op-abc)." }
           - { label: "Nombre del Nominado", name: "nominee_name", widget: "string", required: true, hint: "Nombre del anime, personaje, canción, etc." }
           - { label: "Imagen del Nominado", name: "nominee_image", widget: "image", required: false }
-          # --- CAMPO AÑADIDO PARA POSICIÓN DE IMAGEN ---
           - label: "Posición Imagen (Opcional)"
             name: "image_position_select"
             widget: "select"
             required: false
-            default: "center center" # Valor por defecto si no se elige
+            default: "center center"
             options:
               - { label: "Centro", value: "center center" }
               - { label: "Arriba", value: "center top" }
@@ -268,7 +283,5 @@ collections:
               - { label: "Esquina Inf. Izq.", value: "left bottom" }
               - { label: "Esquina Inf. Der.", value: "right bottom" }
             hint: "Ajusta qué parte de la imagen se ve si esta se recorta."
-          # --- FIN CAMPO AÑADIDO ---
           - { label: "Info Extra (Opcional)", name: "nominee_extra", widget: "string", required: false, hint: "Ej: Estudio, Artista, Personaje..." }
 
-# ... (colección premios) ...
