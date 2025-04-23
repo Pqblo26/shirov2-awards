@@ -1,8 +1,8 @@
 # Configuración del Backend
 backend:
-  name: git-gateway
- # repo: Pqblo26/shirov2-awards
-  #branch: main
+  name: github
+  repo: Pqblo26/shirov2-awards
+  branch: main
 
 # Configuración de Media
 media_folder: "public/images/uploads"
