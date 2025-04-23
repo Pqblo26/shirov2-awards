@@ -3,8 +3,13 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import WinnerCard from '../components/WinnerCard'; // Import reusable component
 import ScrollToTopButton from '../components/ScrollToTopButton'; // Import scroll button
 import matter from 'gray-matter'; // Import gray-matter
+// --- AÑADIDO: Importar hook del contexto y Loader ---
+import { useLayoutContext } from '../layouts/MainLayout'; // Importar hook para contexto
+import { Loader2, Lock } from 'lucide-react'; // Importar Loader y Lock icon
+// --- FIN AÑADIDO ---
 
-// --- Interface for data loaded from CMS ---
+
+// --- Interfaces ---
 interface AwardData {
     id: string; // Filename as ID
     award_type?: string; // Temporada, Aspecto Técnico, etc.
@@ -17,7 +22,6 @@ interface AwardData {
     info_url?: string; // Campo para el enlace externo
 }
 
-// --- Interface expected by WinnerCard ---
 interface Winner {
     id: string | number;
     category: string;
@@ -41,26 +45,32 @@ const sectionLinks = [
 function PremiosPage() {
     const pageRef = useRef(null);
 
-    // --- State for Awards Data ---
-    const [allAwards, setAllAwards] = useState<AwardData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    // --- AÑADIDO: Obtener ajustes del contexto ---
+    // Usamos el hook personalizado que debería estar definido en MainLayout.tsx
+    // Si no lo tienes, necesitas añadirlo o importar directamente useOutletContext
+    const { siteSettings, isLoadingSettings } = useLayoutContext();
+    // --- FIN AÑADIDO ---
 
-    // --- Parallax ---
+    // State for Awards Data
+    const [allAwards, setAllAwards] = useState<AwardData[]>([]);
+    const [isLoadingAwards, setIsLoadingAwards] = useState(true); // Renombrado para claridad
+    const [errorAwards, setErrorAwards] = useState<string | null>(null); // Renombrado para claridad
+
+    // Parallax
     const { scrollYProgress } = useScroll();
     const parallaxY1 = useTransform(scrollYProgress, [0, 1], ["0%", "-30%"]);
     const parallaxY2 = useTransform(scrollYProgress, [0, 1], ["0%", "-50%"]);
 
-    // --- Set document title ---
+    // Set document title
     useEffect(() => {
         document.title = "Shiro Awards 2025 | Shiro Nexus";
     }, []);
 
-    // --- Load Awards Data from CMS ---
+    // Load Awards Data from CMS
     useEffect(() => {
         const loadAwards = async () => {
-            setIsLoading(true);
-            setError(null);
+            setIsLoadingAwards(true);
+            setErrorAwards(null);
             console.log("PremiosPage: Attempting to load awards...");
 
             try {
@@ -129,9 +139,9 @@ function PremiosPage() {
 
             } catch (err) {
                 console.error("PremiosPage: Error loading award files:", err);
-                setError("Error al cargar los premios.");
+                setErrorAwards("Error al cargar los premios.");
             } finally {
-                setIsLoading(false);
+                setIsLoadingAwards(false);
                 console.log("PremiosPage: Finished loading awards.");
             }
         };
@@ -146,8 +156,9 @@ function PremiosPage() {
             if (a.order !== undefined && b.order !== undefined) {
                 return a.order - b.order;
             }
-            if (a.order !== undefined) return -1;
+            if (a.order !== undefined) return -1; // Items with order come first
             if (b.order !== undefined) return 1;
+            // Fallback sort by category name if order is not present
             return a.resolved_category?.localeCompare(b.resolved_category ?? '') ?? 0;
         };
 
@@ -161,7 +172,7 @@ function PremiosPage() {
     }, [allAwards]);
 
 
-    // --- Animation variants (defined inside) ---
+    // --- Animation variants ---
     const sectionVariants = {
         hidden: { opacity: 0, y: 60 },
         visible: {
@@ -170,7 +181,7 @@ function PremiosPage() {
             transition: {
                 duration: 0.8,
                 ease: "easeOut",
-                staggerChildren: 0.15
+                staggerChildren: 0.15 // Stagger children elements
             }
         },
     };
@@ -180,11 +191,11 @@ function PremiosPage() {
     };
 
 
-    // --- Helper to map AwardData to Winner props (defined inside) ---
+    // --- Helper to map AwardData to Winner props ---
     const mapAwardToWinner = (award: AwardData): Winner => ({
         id: award.id,
         category: award.resolved_category || 'Categoría Desconocida',
-        image: award.winner_image || 'https://placehold.co/400x600/7F1D1D/FECACA?text=No+Imagen',
+        image: award.winner_image || 'https://placehold.co/400x600/7F1D1D/FECACA?text=No+Imagen', // Placeholder image
         name: award.winner_name || 'Ganador Desconocido',
         extra: award.winner_extra,
         color: award.display_color || 'default',
@@ -192,16 +203,39 @@ function PremiosPage() {
     });
 
     // --- Loading and Error Display (defined inside) ---
-    const LoadingIndicator = () => (
+    const AwardsLoadingIndicator = () => (
         <div className="text-center py-20 text-gray-400">Cargando premios...</div>
     );
-    const ErrorIndicator = ({ message }: { message: string | null }) => ( // Allow null message
-        <div className="text-center py-20 text-red-400">{message || "Error al cargar los premios."}</div>
+    const AwardsErrorIndicator = ({ message }: { message: string | null }) => ( // Allow null message
+         <div className="text-center py-20 text-red-400">{message || "Error al cargar los premios."}</div>
     );
 
+    // --- AÑADIDO: Renderizado Condicional Basado en Ajustes ---
+    // 1. Mostrar carga si los ajustes o los premios están cargando
+    if (isLoadingSettings || isLoadingAwards) {
+         return (
+            <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+                <Loader2 size={48} className="animate-spin text-pink-500" />
+            </div>
+        );
+    }
+
+    // 2. Mostrar mensaje si la sección está oculta (y no hubo error cargando ajustes)
+    // Usamos `?? true` para mostrar por defecto si siteSettings es null/undefined o si showPremios no está definido
+    if (siteSettings?.showPremios === false) {
+        return (
+             <div className="flex flex-col justify-center items-center min-h-[calc(100vh-200px)] text-center px-6">
+                <Lock size={60} className="text-gray-500 mb-4" />
+                <h2 className="text-2xl font-semibold text-gray-300 mb-2">Sección de Premios No Disponible</h2>
+                <p className="text-gray-400 max-w-md">Los resultados de los Shiro Awards 2025 se revelarán próximamente. ¡Vuelve más tarde!</p>
+            </div>
+        );
+    }
+    // --- FIN AÑADIDO ---
+
+    // 3. Si se debe mostrar, renderizar la página normal
     return (
-        // Removed overflow-x-hidden from here previously
-        <div ref={pageRef} className="relative">
+        <div ref={pageRef} className="relative bg-gray-950"> {/* Added base background color */}
              {/* Decorative Background Elements */}
              <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
                  <div className="absolute inset-0 opacity-20 animate-twinkle" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.6) 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }}></div>
@@ -215,8 +249,8 @@ function PremiosPage() {
                  />
              </div>
 
-            {/* Header */}
-            <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-purple-950/80 via-purple-900/70 to-gray-950/60 shadow-xl">
+             {/* Header */}
+             <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-br from-purple-950/80 via-purple-900/70 to-gray-950/60 shadow-xl">
                  <div className="absolute -top-1/2 left-0 w-full h-[200%] bg-gradient-to-r from-transparent via-pink-400/15 to-transparent animate-[shine_12s_linear_infinite] opacity-60" style={{ transform: 'rotate(15deg)' }}></div>
                  <motion.div
                      className="relative z-10 max-w-5xl mx-auto text-center"
@@ -264,102 +298,87 @@ function PremiosPage() {
                          transition={{ duration: 1, ease: "easeOut" }}
                      ></motion.div>
                  </motion.div>
-            </header>
+             </header>
 
-            {/* Sticky Navigation */}
-            <nav className="sticky top-0 z-40 bg-gray-950/70 backdrop-blur-xl py-3 shadow-lg border-b border-gray-500/20">
-                 <ul className="flex justify-center flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-pink-100 px-4">
-                     {sectionLinks.map(item => (
-                         <motion.li key={item.href + "-sticky"} whileTap={{ scale: 0.95 }}>
-                             <a href={item.href} className={`px-4 py-1.5 rounded-full ${item.hoverBg} hover:text-white transition-colors duration-200 block`}>
-                                 {item.label}
-                             </a>
-                         </motion.li>
-                     ))}
-                 </ul>
-             </nav>
+             {/* Sticky Navigation */}
+             <nav className="sticky top-0 z-40 bg-gray-950/70 backdrop-blur-xl py-3 shadow-lg border-b border-gray-500/20">
+                  <ul className="flex justify-center flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-pink-100 px-4">
+                      {sectionLinks.map(item => (
+                          <motion.li key={item.href + "-sticky"} whileTap={{ scale: 0.95 }}>
+                              <a href={item.href} className={`px-4 py-1.5 rounded-full ${item.hoverBg} hover:text-white transition-colors duration-200 block`}>
+                                  {item.label}
+                              </a>
+                          </motion.li>
+                      ))}
+                  </ul>
+              </nav>
 
-            {/* --- Award Sections --- */}
-            {isLoading ? (
-                <LoadingIndicator />
-            ) : error ? (
-                <ErrorIndicator message={error} />
-            ) : (
-                <>
+             {/* --- Award Sections --- */}
+             {/* Mostrar error si falló la carga de premios */}
+             {errorAwards ? (
+                 <AwardsErrorIndicator message={errorAwards} />
+             ) : (
+                 <>
                      {/* --- Annual Awards Section --- */}
                      <motion.section
-                        id="anual" // ID for the new section
-                        className="relative z-10 py-24 px-6 max-w-7xl mx-auto"
-                        variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
-                    >
-                        <div className="text-center mb-16">
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-amber-400 inline-block pb-2 px-4"> {/* Using amber for gold */}
-                                Premios Principales del Año
-                            </h2>
-                            <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
-                                Los grandes galardones de Shiro Awards 2025.
-                            </motion.p>
-                        </div>
-                        {yearAwards.length > 0 ? (
-                            // Adjust grid columns as needed for this section
-                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" variants={sectionVariants}>
-                                {yearAwards.map(award => (
-                                    <WinnerCard key={award.id} winner={mapAwardToWinner(award)} />
-                                ))}
-                            </motion.div>
-                        ) : (
-                            <p className="text-center text-gray-500 italic">No hay premios anuales definidos.</p>
-                        )}
-                    </motion.section>
-                    {/* --- END: Annual Awards Section --- */}
-
-                    {/* Seasons Section */}
-                    <motion.section
-                        id="temporadas"
-                        className="relative z-10 py-24 px-6 max-w-7xl mx-auto"
-                        variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
-                    >
-                        <div className="text-center mb-16">
-                             <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-pink-500 inline-block pb-2 px-4">
-                                 Ganadores por Temporada
+                         id="anual"
+                         className="relative z-10 py-24 px-6 max-w-7xl mx-auto"
+                         variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
+                     >
+                         <div className="text-center mb-16">
+                             <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-amber-400 inline-block pb-2 px-4">
+                                 Premios Principales del Año
                              </h2>
                              <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
-                                 Un repaso a lo mejor de cada estación del año.
+                                 Los grandes galardones de Shiro Awards 2025.
                              </motion.p>
-                        </div>
-                        {seasonAwards.length > 0 ? (
-                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" variants={sectionVariants}>
-                                {seasonAwards.map(award => (
-                                    <WinnerCard key={award.id} winner={mapAwardToWinner(award)} />
-                                ))}
-                            </motion.div>
-                        ) : (
-                            <p className="text-center text-gray-500 italic">No hay premios de temporada definidos.</p>
-                        )}
-                    </motion.section>
+                         </div>
+                         {yearAwards.length > 0 ? (
+                             <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" variants={sectionVariants}>
+                                 {yearAwards.map(award => ( <WinnerCard key={award.id} winner={mapAwardToWinner(award)} /> ))}
+                             </motion.div>
+                         ) : ( <p className="text-center text-gray-500 italic">No hay premios anuales definidos.</p> )}
+                     </motion.section>
 
-                    {/* Aspect Section */}
-                     <motion.section id="aspect" className="relative z-10 py-24 px-6 max-w-7xl mx-auto" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
+                     {/* --- Seasons Section --- */}
+                     <motion.section
+                         id="temporadas"
+                         className="relative z-10 py-24 px-6 max-w-7xl mx-auto"
+                         variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
+                     >
                          <div className="text-center mb-16">
+                              <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-pink-500 inline-block pb-2 px-4">
+                                  Ganadores por Temporada
+                              </h2>
+                              <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
+                                  Un repaso a lo mejor de cada estación del año.
+                              </motion.p>
+                         </div>
+                         {seasonAwards.length > 0 ? (
+                             <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" variants={sectionVariants}>
+                                 {seasonAwards.map(award => ( <WinnerCard key={award.id} winner={mapAwardToWinner(award)} /> ))}
+                             </motion.div>
+                         ) : ( <p className="text-center text-gray-500 italic">No hay premios de temporada definidos.</p> )}
+                     </motion.section>
+
+                     {/* --- Aspect Section --- */}
+                      <motion.section id="aspect" className="relative z-10 py-24 px-6 max-w-7xl mx-auto" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
+                          <div className="text-center mb-16">
                               <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-yellow-400 inline-block pb-2 px-4">
                                   Premios Técnicos y Visuales
                               </h2>
                               <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
                                   Reconociendo la excelencia en la producción.
                               </motion.p>
-                         </div>
-                         {aspectAwards.length > 0 ? (
-                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" variants={sectionVariants}>
-                                {aspectAwards.map(award => (
-                                    <WinnerCard key={award.id} winner={mapAwardToWinner(award)} />
-                                ))}
-                            </motion.div>
-                         ) : (
-                            <p className="text-center text-gray-500 italic">No hay premios técnicos definidos.</p>
-                         )}
-                     </motion.section>
+                          </div>
+                          {aspectAwards.length > 0 ? (
+                              <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" variants={sectionVariants}>
+                                  {aspectAwards.map(award => ( <WinnerCard key={award.id} winner={mapAwardToWinner(award)} /> ))}
+                              </motion.div>
+                          ) : ( <p className="text-center text-gray-500 italic">No hay premios técnicos definidos.</p> )}
+                      </motion.section>
 
-                    {/* Actors Section */}
+                     {/* --- Actors Section --- */}
                       <motion.section id="actores" className="relative z-10 py-24 px-6 max-w-7xl mx-auto" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
                           <div className="text-center mb-16">
                                <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-indigo-400 inline-block pb-2 px-4">
@@ -370,42 +389,34 @@ function PremiosPage() {
                                </motion.p>
                           </div>
                           {actorAwards.length > 0 ? (
-                            <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto" variants={sectionVariants}>
-                                {actorAwards.map(award => (
-                                    <WinnerCard key={award.id} winner={mapAwardToWinner(award)} />
-                                ))}
-                            </motion.div>
-                          ) : (
-                            <p className="text-center text-gray-500 italic">No hay premios de actuación definidos.</p>
-                          )}
+                              <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto" variants={sectionVariants}>
+                                  {actorAwards.map(award => ( <WinnerCard key={award.id} winner={mapAwardToWinner(award)} /> ))}
+                              </motion.div>
+                          ) : ( <p className="text-center text-gray-500 italic">No hay premios de actuación definidos.</p> )}
                       </motion.section>
 
-                    {/* Genres Section */}
-                    <motion.section id="generos" className="relative z-10 py-24 px-6 max-w-7xl mx-auto" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
-                        <div className="text-center mb-16">
-                             <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-red-400 inline-block pb-2 px-4">
-                                 Ganadores por Género
-                             </h2>
-                             <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
-                                 Lo más destacado en cada categoría narrativa.
-                             </motion.p>
-                        </div>
-                        {genreAwards.length > 0 ? (
-                            <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" variants={sectionVariants}>
-                                {genreAwards.map(award => (
-                                    <WinnerCard key={award.id} winner={mapAwardToWinner(award)} />
-                                ))}
-                            </motion.div>
-                        ) : (
-                            <p className="text-center text-gray-500 italic">No hay premios por género definidos.</p>
-                        )}
-                    </motion.section>
-                </>
-            )}
+                     {/* --- Genres Section --- */}
+                     <motion.section id="generos" className="relative z-10 py-24 px-6 max-w-7xl mx-auto" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
+                         <div className="text-center mb-16">
+                              <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-5 font-['Zen_Dots',_sans-serif] border-b-4 border-red-400 inline-block pb-2 px-4">
+                                  Ganadores por Género
+                              </h2>
+                              <motion.p className="text-lg text-gray-300 italic max-w-2xl mx-auto" variants={paragraphVariants}>
+                                  Lo más destacado en cada categoría narrativa.
+                              </motion.p>
+                         </div>
+                         {genreAwards.length > 0 ? (
+                             <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" variants={sectionVariants}>
+                                 {genreAwards.map(award => ( <WinnerCard key={award.id} winner={mapAwardToWinner(award)} /> ))}
+                             </motion.div>
+                         ) : ( <p className="text-center text-gray-500 italic">No hay premios por género definidos.</p> )}
+                     </motion.section>
+                 </>
+             )}
 
-            <ScrollToTopButton />
-            {/* Global styles */}
-            <style jsx global>{`
+             <ScrollToTopButton />
+             {/* Global styles */}
+             <style jsx global>{`
                  /* Styles specific to this page or potentially global animations */
                   .font-['Zen_Dots',_sans-serif] { font-family: 'Zen Dots', sans-serif; }
                   .animate-text-shimmer { background-size: 200% auto; animation: shimmer 4s linear infinite; }
@@ -413,7 +424,7 @@ function PremiosPage() {
                   @keyframes shine { 0% { transform: translateX(-100%) rotate(15deg); } 100% { transform: translateX(100%) rotate(15deg); } }
                   .animate-twinkle { animation: twinkle 5s linear infinite alternate; }
                   @keyframes twinkle { 0% { opacity: 0.1; } 50% { opacity: 0.3; } 100% { opacity: 0.1; } }
-            `}</style>
+             `}</style>
         </div>
     );
 }
