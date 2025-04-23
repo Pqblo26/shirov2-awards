@@ -1,28 +1,36 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, NavLink } from 'react-router-dom'; // Import NavLink for active styling
+import { Link, NavLink } from 'react-router-dom';
 
-// Define the props interface
+// --- MODIFICADO: Añadir showPremios a las props ---
 interface TopNavBarProps {
     isAdminMode: boolean;
+    showPremios: boolean; // Prop para controlar visibilidad del enlace
 }
+// --- FIN MODIFICACIÓN ---
 
-const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
+const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode, showPremios }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
      // --- Navigation Links ---
-     // Added "Sobre Mí" and removed commented out links for clarity
-     const headerLinks = [
+     const baseLinks = [
          { href: "/", label: "Inicio" },
          { href: "/traducciones", label: "Traducciones" },
-         { href: "/premios", label: "Premios" },
+         // El enlace de Premios se añadirá condicionalmente
          { href: "/votaciones", label: "Votaciones" },
-         // --- ENLACE AÑADIDO ---
          { href: "/sobre-mi", label: "Sobre Mí" },
-         // --- FIN ENLACE AÑADIDO ---
-         // ...(isAdminMode ? [{ href: "/admin", label: "Admin" }] : []), // Admin link logic (kept commented as original)
-         // { href: "/login", label: "Login" }, // Login link logic (kept commented as original)
      ];
+
+     // --- MODIFICADO: Añadir enlace de Premios condicionalmente ---
+     const headerLinks = showPremios
+         ? [...baseLinks.slice(0, 2), { href: "/premios", label: "Premios" }, ...baseLinks.slice(2)]
+         : baseLinks;
+     // Podríamos añadir aquí el enlace a /panel-admin si isAdminMode es true, si quieres
+     // if (isAdminMode) {
+     //     headerLinks.push({ href: "/panel-admin", label: "Panel Admin" });
+     // }
+     // --- FIN MODIFICACIÓN ---
+
 
     // Style for active NavLink
     const activeClassName = "bg-gray-700/80 text-white";
@@ -38,15 +46,13 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
                           <span className="text-white font-bold text-lg hover:text-pink-300 transition-colors"> Shiro Nexus </span>
                      </Link>
 
-                     {/* Right Side: Navigation Links */}
+                     {/* Right Side: Navigation Links (ahora dinámicos) */}
                      <div className="hidden md:block">
                          <div className="ml-10 flex items-baseline space-x-4">
-                             {headerLinks.map((item) => (
-                                 <NavLink // Use NavLink for active state styling
+                             {headerLinks.map((item) => ( // Usamos el array filtrado
+                                 <NavLink
                                      key={item.label}
                                      to={item.href}
-                                     // Apply active style if the route matches exactly (end={true})
-                                     // For the homepage link, exact match is usually desired.
                                      end={item.href === "/"}
                                      className={({ isActive }) =>
                                          `${isActive ? activeClassName : inactiveClassName} px-3 py-2 rounded-md text-sm font-medium transition-colors`
@@ -72,15 +78,15 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ isAdminMode }) => {
                  {isMobileMenuOpen && (
                      <motion.div className="md:hidden" id="mobile-menu" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} style={{ overflow: 'hidden' }} >
                           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                             {headerLinks.map((item) => (
-                                  <NavLink // Use NavLink here too
+                             {headerLinks.map((item) => ( // Usamos el array filtrado
+                                  <NavLink
                                       key={item.label + "-mobile"}
                                       to={item.href}
                                       end={item.href === "/"}
                                       className={({ isActive }) =>
                                          `${isActive ? activeClassName : inactiveClassName} block px-3 py-2 rounded-md text-base font-medium transition-colors`
                                       }
-                                      onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
+                                      onClick={() => setIsMobileMenuOpen(false)}
                                   >
                                       {item.label}
                                   </NavLink>
