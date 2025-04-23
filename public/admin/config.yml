@@ -1,6 +1,6 @@
 # Configuración del Backend
 backend:
-#  name: git-gateway
+  name: git-gateway
  # repo: Pqblo26/shirov2-awards
   #branch: main
 
