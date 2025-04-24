@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Loader2, AlertCircle, BarChart, Vote, ToggleLeft, ToggleRight } from 'lucide-react'; // Importar más iconos
+import { motion, AnimatePresence } from 'framer-motion'; // Importar AnimatePresence
+import { Eye, EyeOff, Loader2, AlertCircle, BarChart, Vote } from 'lucide-react'; // Quitar ToggleLeft/Right si no se usan
 
 // Interfaz para los ajustes del sitio
 interface SiteSettings {
   showPremios?: boolean;
-  votingActive?: boolean; // Nuevo ajuste para votaciones globales
-  // otros ajustes futuros...
+  votingActive?: boolean;
 }
 
 // Interfaz para resultados de votos
@@ -19,27 +18,26 @@ interface VoteResult {
 function AdminPage() {
     const [settings, setSettings] = useState<SiteSettings | null>(null);
     const [isLoadingSettings, setIsLoadingSettings] = useState(true);
-    const [isSaving, setIsSaving] = useState(false); // Estado para guardar cambios de ajustes
-    const [error, setError] = useState<string | null>(null); // Error general o de ajustes
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null); // Error general o de carga de ajustes
 
-    // Estado para votos
     const [voteResults, setVoteResults] = useState<VoteResult[] | null>(null);
-    const [isLoadingVotes, setIsLoadingVotes] = useState(false); // Carga de votos
-    const [errorVotes, setErrorVotes] = useState<string | null>(null); // Error específico de votos
+    const [isLoadingVotes, setIsLoadingVotes] = useState(false);
+    const [errorVotes, setErrorVotes] = useState<string | null>(null);
 
-    // Estado para mensajes de feedback
+    // Estado para mensajes de feedback (para guardar ajustes)
     const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     // Función para obtener los ajustes actuales
     const fetchSettings = useCallback(async () => {
         console.log("Fetching settings...");
         setIsLoadingSettings(true);
-        setError(null); // Limpiar error general al cargar ajustes
+        setError(null);
         const token = localStorage.getItem('admin_token');
 
         if (!token) {
             console.error("No admin token found for fetching settings.");
-            setError("No autenticado para cargar ajustes."); // Usar error general
+            setError("No autenticado para cargar ajustes.");
             setIsLoadingSettings(false);
             return;
         }
@@ -55,14 +53,14 @@ function AdminPage() {
             const data = await response.json();
             if (data.success) {
                 console.log("Settings loaded:", data.settings);
-                setSettings(data.settings || {}); // Usar objeto vacío si no hay ajustes previos
+                setSettings(data.settings || {});
             } else {
                 throw new Error(data.message || 'Error al cargar ajustes del sitio');
             }
         } catch (err: any) {
             console.error("Error fetching settings:", err);
             setError(err.message || 'No se pudieron cargar los ajustes.');
-            setSettings({}); // Poner objeto vacío en caso de error
+            setSettings({});
         } finally {
             setIsLoadingSettings(false);
         }
@@ -74,7 +72,7 @@ function AdminPage() {
         fetchSettings();
     }, [fetchSettings]);
 
-     // Effect to clear feedback message
+     // Effect to clear feedback message after a delay
      useEffect(() => {
         if (feedbackMessage) {
             const timer = setTimeout(() => { setFeedbackMessage(null); }, 5000);
@@ -82,15 +80,20 @@ function AdminPage() {
         }
     }, [feedbackMessage]);
 
-    // Función para actualizar un ajuste específico
+    // Función para actualizar un ajuste específico (MODIFIED for feedback)
     const updateSetting = async (key: keyof SiteSettings, value: any) => {
         console.log(`Updating setting: ${key} to ${value}`);
         setIsSaving(true);
-        setError(null);
-        setFeedbackMessage(null);
+        setError(null); // Limpiar error general
+        setFeedbackMessage(null); // Limpiar feedback previo
         const token = localStorage.getItem('admin_token');
 
-        if (!token) { setError("No autenticado para guardar."); setIsSaving(false); return; }
+        if (!token) {
+            // Usar feedbackMessage para errores también
+            setFeedbackMessage({ type: 'error', message: 'Error: No autenticado para guardar.' });
+            setIsSaving(false);
+            return;
+        }
 
         const updatedSettings = { ...(settings || {}), [key]: value };
 
@@ -100,17 +103,24 @@ function AdminPage() {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(updatedSettings),
             });
-            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `HTTP error! status: ${response.status}`); }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
             if (data.success) {
                 console.log("Settings saved:", data.settings);
                 setSettings(data.settings);
                 setFeedbackMessage({ type: 'success', message: 'Ajuste guardado con éxito.' });
-            } else { throw new Error(data.message || 'Error al guardar ajustes'); }
+            } else {
+                throw new Error(data.message || 'Error al guardar ajustes');
+            }
         } catch (err: any) {
             console.error("Error saving settings:", err);
             setFeedbackMessage({ type: 'error', message: err.message || 'No se pudieron guardar los ajustes.' });
-        } finally { setIsSaving(false); }
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Handler para el interruptor de Premios
@@ -130,7 +140,7 @@ function AdminPage() {
         console.log("Fetching vote results...");
         setIsLoadingVotes(true);
         setErrorVotes(null);
-        setFeedbackMessage(null);
+        setFeedbackMessage(null); // Limpiar feedback general
         setVoteResults(null);
         const token = localStorage.getItem('admin_token');
 
@@ -143,7 +153,7 @@ function AdminPage() {
         try {
             const response = await fetch('/api/admin/get-votes', {
                  headers: { 'Authorization': `Bearer ${token}` }
-            }) // <<< PUNTO Y COMA ELIMINADO AQUÍ (Línea 133 original)
+            }) // Punto y coma eliminado aquí por si acaso
             if (!response.ok) {
                  const errorData = await response.json();
                 throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -187,17 +197,17 @@ function AdminPage() {
                 Panel de Administración
             </motion.h1>
 
-            {/* Mostrar error general si existe */}
-            {error && !isLoadingSettings && !isSaving && (
+            {/* Mostrar error general si existe (solo errores de carga inicial) */}
+            {error && !isLoadingSettings && (
                 <div className="mb-6 flex items-center justify-center gap-2 text-sm text-red-400 bg-red-900/30 p-3 rounded-md border border-red-700/50">
                      <AlertCircle size={16} />
-                     <span>Error al cargar/guardar ajustes: {error}</span>
+                     <span>Error al cargar ajustes: {error}</span>
                 </div>
              )}
 
             {/* Sección de Ajustes Generales */}
             <motion.div
-                className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 space-y-6"
+                className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 space-y-6 mb-8" // Añadido margen inferior
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
             >
                 <h2 className="text-xl font-semibold text-gray-100 border-b border-gray-600 pb-2">Ajustes del Sitio</h2>
@@ -242,26 +252,26 @@ function AdminPage() {
                     </button>
                 </div>
 
-                {/* Indicador de guardado */}
-                {isSaving && (
-                    <div className="flex items-center justify-center gap-2 text-sm text-blue-300 pt-4 border-t border-gray-700/50">
-                        <Loader2 size={16} className="animate-spin" />
-                        Guardando ajuste...
-                    </div>
-                )}
-
-                 {/* Feedback de guardado */}
-                 <AnimatePresence>
-                   {feedbackMessage && !isSaving && ( // Mostrar solo cuando no esté guardando
-                        <motion.div
-                            key={feedbackMessage.message} // Re-animar si cambia el mensaje
-                            className={`mt-4 px-4 py-2 rounded-md text-sm font-medium inline-block ${ feedbackMessage.type === 'success' ? 'bg-green-600/80 text-white' : 'bg-red-600/80 text-white' }`}
-                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                        >
-                            {feedbackMessage.message}
-                        </motion.div>
-                   )}
-                </AnimatePresence>
+                {/* Indicador de guardado y Feedback */}
+                <div className="text-center min-h-[2.5rem] pt-4 border-t border-gray-700/50"> {/* Contenedor para feedback */}
+                    {isSaving && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-blue-300">
+                            <Loader2 size={16} className="animate-spin" />
+                            Guardando ajuste...
+                        </div>
+                    )}
+                     <AnimatePresence>
+                       {feedbackMessage && !isSaving && ( // Mostrar solo cuando no esté guardando
+                            <motion.div
+                                key={feedbackMessage.message} // Re-animar si cambia el mensaje
+                                className={`px-4 py-2 rounded-md text-sm font-medium inline-block ${ feedbackMessage.type === 'success' ? 'bg-green-600/80 text-white' : 'bg-red-600/80 text-white' }`}
+                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                            >
+                                {feedbackMessage.message}
+                            </motion.div>
+                       )}
+                    </AnimatePresence>
+                </div>
 
             </motion.div>
 
@@ -285,7 +295,7 @@ function AdminPage() {
 
                  {/* Mostrar error de carga de votos */}
                  {errorVotes && (
-                    <div className="flex items-center justify-center gap-2 text-sm text-red-400 bg-red-900/30 p-2 rounded-md border border-red-700/50">
+                    <div className="flex items-center justify-center gap-2 text-sm text-red-400 bg-red-900/30 p-2 rounded-md border border-red-700/50 mt-4">
                          <AlertCircle size={16} />
                          <span>Error al cargar votos: {errorVotes}</span>
                     </div>
@@ -295,12 +305,12 @@ function AdminPage() {
                  {voteResults && !isLoadingVotes && (
                     <div className="mt-4 max-h-96 overflow-y-auto pr-2"> {/* Scroll si hay muchos resultados */}
                         {voteResults.length === 0 ? (
-                            <p className="text-center text-gray-500 italic">Aún no hay votos registrados.</p>
+                            <p className="text-center text-gray-500 italic mt-4">Aún no hay votos registrados.</p>
                         ) : (
                             <ul className="space-y-2">
                                 {voteResults.map((vote) => (
                                     <li key={`${vote.categorySlug}-${vote.nomineeId}`} className="flex justify-between items-center text-sm bg-gray-700/50 px-3 py-1.5 rounded">
-                                        <span className="text-gray-300 break-all mr-2"> {/* Added margin right */}
+                                        <span className="text-gray-300 break-all mr-2">
                                             <span className="font-medium text-gray-100">{vote.categorySlug}</span> : {vote.nomineeId}
                                         </span>
                                         <span className="font-bold text-cyan-300 text-base flex-shrink-0">{vote.count}</span>
@@ -313,7 +323,7 @@ function AdminPage() {
             </motion.div>
 
         </div> {/* Closing inner centering container */}
-    );
-}
+    ); // Closing return statement
+} // Closing AdminPage component function
 
 export default AdminPage;
