@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion'; // Importar AnimatePresence
-import { Eye, EyeOff, Loader2, AlertCircle, BarChart, Vote } from 'lucide-react'; // Quitar ToggleLeft/Right si no se usan
+import { Eye, EyeOff, Loader2, AlertCircle, BarChart, Vote } from 'lucide-react'; // Iconos necesarios
 
 // Interfaz para los ajustes del sitio
 interface SiteSettings {
@@ -18,12 +18,12 @@ interface VoteResult {
 function AdminPage() {
     const [settings, setSettings] = useState<SiteSettings | null>(null);
     const [isLoadingSettings, setIsLoadingSettings] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); // Estado para guardar cambios de ajustes
     const [error, setError] = useState<string | null>(null); // Error general o de carga de ajustes
 
     const [voteResults, setVoteResults] = useState<VoteResult[] | null>(null);
-    const [isLoadingVotes, setIsLoadingVotes] = useState(false);
-    const [errorVotes, setErrorVotes] = useState<string | null>(null);
+    const [isLoadingVotes, setIsLoadingVotes] = useState(false); // Carga de votos
+    const [errorVotes, setErrorVotes] = useState<string | null>(null); // Error específico de votos
 
     // Estado para mensajes de feedback (para guardar ajustes)
     const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -75,12 +75,12 @@ function AdminPage() {
      // Effect to clear feedback message after a delay
      useEffect(() => {
         if (feedbackMessage) {
-            const timer = setTimeout(() => { setFeedbackMessage(null); }, 5000);
-            return () => clearTimeout(timer);
+            const timer = setTimeout(() => { setFeedbackMessage(null); }, 5000); // Ocultar después de 5 segundos
+            return () => clearTimeout(timer); // Limpiar timer si el componente se desmonta o el mensaje cambia
         }
     }, [feedbackMessage]);
 
-    // Función para actualizar un ajuste específico (MODIFIED for feedback)
+    // Función para actualizar un ajuste específico (con feedback)
     const updateSetting = async (key: keyof SiteSettings, value: any) => {
         console.log(`Updating setting: ${key} to ${value}`);
         setIsSaving(true);
@@ -89,7 +89,6 @@ function AdminPage() {
         const token = localStorage.getItem('admin_token');
 
         if (!token) {
-            // Usar feedbackMessage para errores también
             setFeedbackMessage({ type: 'error', message: 'Error: No autenticado para guardar.' });
             setIsSaving(false);
             return;
@@ -110,7 +109,7 @@ function AdminPage() {
             const data = await response.json();
             if (data.success) {
                 console.log("Settings saved:", data.settings);
-                setSettings(data.settings);
+                setSettings(data.settings); // Actualizar estado local
                 setFeedbackMessage({ type: 'success', message: 'Ajuste guardado con éxito.' });
             } else {
                 throw new Error(data.message || 'Error al guardar ajustes');
@@ -123,16 +122,12 @@ function AdminPage() {
         }
     };
 
-    // Handler para el interruptor de Premios
+    // Handlers para los interruptores
     const handleTogglePremios = () => {
         if (!isSaving) { updateSetting('showPremios', !settings?.showPremios); }
     };
-
-    // Handler para el interruptor de Votaciones
     const handleToggleVoting = () => {
-        if (!isSaving) {
-            updateSetting('votingActive', !settings?.votingActive);
-        }
+        if (!isSaving) { updateSetting('votingActive', !settings?.votingActive); }
     };
 
     // Función para obtener resultados de votos
@@ -153,7 +148,7 @@ function AdminPage() {
         try {
             const response = await fetch('/api/admin/get-votes', {
                  headers: { 'Authorization': `Bearer ${token}` }
-            }) // Punto y coma eliminado aquí por si acaso
+            }); // Punto y coma eliminado aquí por si acaso
             if (!response.ok) {
                  const errorData = await response.json();
                 throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -164,7 +159,7 @@ function AdminPage() {
                 const sortedVotes = (data.votes as VoteResult[]).sort((a, b) => {
                     if (a.categorySlug < b.categorySlug) return -1;
                     if (a.categorySlug > b.categorySlug) return 1;
-                    return b.count - a.count;
+                    return b.count - a.count; // Mayor contador primero dentro de la categoría
                 });
                 setVoteResults(sortedVotes);
             } else {
@@ -273,7 +268,7 @@ function AdminPage() {
                     </AnimatePresence>
                 </div>
 
-            </motion.div>
+            </motion.div> {/* Fin Sección Ajustes Generales */}
 
              {/* Sección Resultados Votaciones */}
              <motion.div
@@ -320,10 +315,11 @@ function AdminPage() {
                         )}
                     </div>
                  )}
-            </motion.div>
+            </motion.div> {/* Fin Sección Resultados Votaciones */}
 
         </div> {/* Closing inner centering container */}
     ); // Closing return statement
 } // Closing AdminPage component function
 
 export default AdminPage;
+
