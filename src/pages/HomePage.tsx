@@ -1,87 +1,55 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react'; // useRef añadido por si se usa en código omitido
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import WinnerCard from '../components/WinnerCard'; // Import WinnerCard
+import WinnerCard from '../components/WinnerCard';
 import TranslationPreviewCard from '../components/TranslationPreviewCard';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import matter from 'gray-matter';
-// --- AÑADIDO: Importar icono para Ranking ---
-import { ListOrdered, CheckSquare, Trophy, BookOpen } from 'lucide-react'; // Añadir iconos usados en FeatureCard
-// --- FIN AÑADIDO ---
+import { ListOrdered, CheckSquare, Trophy, BookOpen, BarChart } from 'lucide-react'; // Añadido BarChart para sección ranking
+
+// --- Interfaces (NomineeData, VotingCategoryData, Winner, AwardData) ---
+// (Asegúrate de que estas interfaces están definidas si las necesitas aquí,
+// aunque para HomePage solo usamos Winner y AwardData para los previews)
+interface TranslationPreviewData { id: string; title: string; excerpt?: string; link: string; imageUrl?: string; tag?: string; date: string; source?: string; }
+interface Winner { id: string | number; category: string; image: string; name: string; extra?: string; color: string; info_url?: string; }
+interface AwardData { id: string; award_type?: string; resolved_category?: string; winner_name?: string; winner_image?: string; winner_extra?: string; display_color?: string; order?: number; info_url?: string; category_temporada?: string; category_aspecto?: string; category_actor?: string; category_genero?: string; category_anual?: string; }
 
 
-// --- Helper function to get display value (for translations) ---
+// --- Helper function ---
 const getDisplayValue = (selectValue?: string, otherValue?: string): string | undefined => {
     if (selectValue === "Otro") return otherValue || undefined;
     return selectValue;
 };
 
-// --- Define structure for TranslationPreviewCard data ---
-interface TranslationPreviewData {
-    id: string; title: string; excerpt?: string; link: string;
-    imageUrl?: string; tag?: string; date: string; source?: string;
-}
-
-// --- Define structure expected by WinnerCard ---
-interface Winner {
-    id: string | number;
-    category: string;
-    image: string;
-    name: string;
-    extra?: string;
-    color: string;
-    info_url?: string;
-}
-
-// --- Define structure for AwardData loaded from CMS ---
-interface AwardData {
-    id: string;
-    award_type?: string;
-    resolved_category?: string;
-    winner_name?: string;
-    winner_image?: string;
-    winner_extra?: string;
-    display_color?: string;
-    order?: number;
-    info_url?: string;
-    category_temporada?: string;
-    category_aspecto?: string;
-    category_actor?: string;
-    category_genero?: string;
-    category_anual?: string;
-}
-
 // --- Reusable Card Component for Featured Sections ---
-// (Asegurarse que la definición está completa y correcta)
 interface FeatureCardProps {
     icon: React.ReactNode;
     title: string;
     description: string;
     link: string;
-    // --- MODIFICADO: Añadir purple como opción ---
     color: 'pink' | 'blue' | 'green' | 'purple';
-    // --- FIN MODIFICACIÓN ---
 }
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, link, color }) => {
     const colorClasses = {
         pink: { hoverShadow: 'hover:shadow-pink-500/30', hoverBorder: 'hover:border-pink-500/50', iconText: 'text-pink-400' },
         blue: { hoverShadow: 'hover:shadow-blue-500/30', hoverBorder: 'hover:border-blue-500/50', iconText: 'text-blue-400' },
         green: { hoverShadow: 'hover:shadow-green-500/30', hoverBorder: 'hover:border-green-500/50', iconText: 'text-green-400' },
-        // --- AÑADIDO: Estilo Purple ---
         purple: { hoverShadow: 'hover:shadow-purple-500/30', hoverBorder: 'hover:border-purple-500/50', iconText: 'text-purple-400' },
-        // --- FIN AÑADIDO ---
     };
     const styles = colorClasses[color];
     return (
-        <div className={`group relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/80 to-gray-900/90 p-6 shadow-lg border border-gray-700/50 transition-all duration-300 ${styles.hoverBorder} ${styles.hoverShadow} hover:scale-[1.03]`} >
+        // h-full en el div exterior
+        <div className={`group relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-800/80 to-gray-900/90 p-6 shadow-lg border border-gray-700/50 transition-all duration-300 ${styles.hoverBorder} ${styles.hoverShadow} hover:scale-[1.03] h-full`} >
+            {/* --- MODIFICADO: Añadido h-full y flex flex-col al Link --- */}
             <Link to={link} className="flex flex-col items-center text-center h-full">
+            {/* --- FIN MODIFICACIÓN --- */}
                 <div className={`mb-4 p-3 rounded-full bg-gray-900/50 border border-gray-600/50 ${styles.iconText} transition-colors duration-300 group-hover:bg-gray-800`}>
                     {icon}
                 </div>
                 <h3 className={`text-xl font-semibold mb-2 text-white transition-colors duration-300 group-hover:${styles.iconText}`}>
                     {title}
                 </h3>
-                <p className="text-gray-400 text-sm flex-grow">
+                <p className="text-gray-400 text-sm flex-grow"> {/* flex-grow empuja el span hacia abajo */}
                     {description}
                 </p>
                 <span className="mt-4 text-xs font-semibold text-gray-500 group-hover:text-white transition-colors duration-300 flex items-center">
@@ -105,7 +73,7 @@ function HomePage() {
     const [featuredWinners, setFeaturedWinners] = useState<Winner[]>([]);
     const [isLoadingWinners, setIsLoadingWinners] = useState(true);
     const [errorWinners, setErrorWinners] = useState<string | null>(null);
-    const numberOfWinnerPreviews = 2; // Show 2 featured winners
+    const numberOfWinnerPreviews = 2;
 
     // Effect for Document Title
     useEffect(() => {
@@ -198,11 +166,18 @@ function HomePage() {
                              info_url: frontmatter.info_url,
                              award_type: frontmatter.award_type,
                              order: frontmatter.order,
+                             // Incluir campos condicionales si son necesarios para lógica futura
+                             category_temporada: frontmatter.category_temporada,
+                             category_aspecto: frontmatter.category_aspecto,
+                             category_actor: frontmatter.category_actor,
+                             category_genero: frontmatter.category_genero,
+                             category_anual: frontmatter.category_anual,
                          });
                      } catch (parseError) { console.error(`HomePage: Error parsing award frontmatter for file: ${path}`, parseError); }
                  }
 
                  // Select featured winners (e.g., first N found, could sort by 'order' later)
+                 // Aquí podrías añadir lógica para ordenar por 'order' antes de slice si quieres destacar específicos
                  const featured = loadedWinnersData.slice(0, numberOfWinnerPreviews).map(award => ({
                      // Map AwardData to Winner interface for WinnerCard
                      id: award.id,
@@ -274,44 +249,11 @@ function HomePage() {
             {/* === Featured Sections Grid === */}
             <motion.section className="py-16 md:py-24 px-6 bg-gray-950" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} >
                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">Explora Nuestras Secciones</h2>
-                {/* --- Grid con 4 columnas --- */}
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
-                {/* --- FIN MODIFICACIÓN --- */}
-                     <motion.div variants={itemVariants}>
-                         <FeatureCard
-                             icon={<Trophy size={32} />} // Icono Premios
-                             title="Premios"
-                             description="Descubre los ganadores anuales y lo más destacado de la temporada."
-                             link="/premios"
-                             color="pink" />
-                      </motion.div>
-                     <motion.div variants={itemVariants}>
-                         <FeatureCard
-                             icon={<CheckSquare size={32} />} // Icono Votaciones
-                             title="Votaciones"
-                             description="¡Tu opinión cuenta! Participa en nuestras encuestas y votaciones activas."
-                             link="/votaciones"
-                             color="blue" />
-                     </motion.div>
-                     {/* --- FeatureCard para Ranking Semanal --- */}
-                     <motion.div variants={itemVariants}>
-                        <FeatureCard
-                            icon={<ListOrdered size={32} />} // Icono de lista ordenada
-                            title="Ranking Semanal"
-                            description="Crea y comparte tu Top 10 personal de los animes de la temporada."
-                            link="/ranking-semanal" // Enlace a la nueva página
-                            color="purple" // Nuevo color
-                        />
-                     </motion.div>
-                     {/* --- FIN FeatureCard Ranking --- */}
-                     <motion.div variants={itemVariants}>
-                         <FeatureCard
-                             icon={<BookOpen size={32} />} // Icono Traducciones
-                             title="Traducciones"
-                             description="Explora contenido exclusivo, entrevistas y noticias traducidas por nuestro equipo."
-                             link="/traducciones"
-                             color="green" />
-                     </motion.div>
+                     <motion.div variants={itemVariants}> <FeatureCard icon={<Trophy size={32} />} title="Premios" description="Descubre los ganadores anuales y lo más destacado de la temporada." link="/premios" color="pink" /> </motion.div>
+                     <motion.div variants={itemVariants}> <FeatureCard icon={<CheckSquare size={32} />} title="Votaciones" description="¡Tu opinión cuenta! Participa en nuestras encuestas y votaciones activas." link="/votaciones" color="blue" /> </motion.div>
+                     <motion.div variants={itemVariants}> <FeatureCard icon={<ListOrdered size={32} />} title="Ranking Semanal" description="Crea y comparte tu Top 10 personal de los animes de la temporada." link="/ranking-semanal" color="purple" /> </motion.div>
+                     <motion.div variants={itemVariants}> <FeatureCard icon={<BookOpen size={32} />} title="Traducciones" description="Explora contenido exclusivo, entrevistas y noticias traducidas por nuestro equipo." link="/traducciones" color="green" /> </motion.div>
                  </div>
             </motion.section>
             <div className="h-px bg-gradient-to-r from-transparent via-blue-800/50 to-transparent my-10"></div>
@@ -350,6 +292,35 @@ function HomePage() {
                        </div>
                    )}
              </motion.section>
+
+             {/* --- Sección Preview Ranking Semanal --- */}
+             <div className="h-px bg-gradient-to-r from-transparent via-purple-800/50 to-transparent my-10"></div>
+             <motion.section
+                 className="py-16 md:py-20 px-6 bg-transparent"
+                 variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
+             >
+                 <h2 className="text-3xl md:text-4xl font-bold text-center mb-14 text-white">
+                     <span className="text-purple-400">Ranking</span> Semanal Destacado
+                 </h2>
+                 <div className="max-w-4xl mx-auto text-center">
+                     {/* --- CONTENIDO DEL RANKING IRÁ AQUÍ --- */}
+                     <div className="bg-gray-800/30 p-8 rounded-lg border border-dashed border-gray-700">
+                         <p className="text-gray-500 italic">
+                             Próximamente: Visualización del Top semanal aquí.
+                             <br />
+                             (Requiere lógica adicional para cargar y mostrar los votos)
+                         </p>
+                         <div className="mt-6">
+                              <Link to="/ranking-semanal" className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 focus:ring-offset-gray-900 transition-colors" >
+                                  Crea tu propio Ranking
+                              </Link>
+                         </div>
+                     </div>
+                     {/* --- FIN CONTENIDO RANKING --- */}
+                 </div>
+             </motion.section>
+             {/* --- FIN Sección Ranking --- */}
+
 
              {/* === Call to Action Section === */}
               <motion.section className="py-16 md:py-24 px-6 my-16 md:my-24 relative overflow-hidden rounded-xl max-w-7xl mx-auto bg-gradient-to-r from-blue-900/50 to-purple-900/50" variants={sectionVariants} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} >
