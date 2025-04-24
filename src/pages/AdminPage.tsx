@@ -183,6 +183,7 @@ function AdminPage() {
         );
     }
 
+    // --- INICIO JSX PRINCIPAL ---
     return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <motion.h1
@@ -255,10 +256,12 @@ function AdminPage() {
                             Guardando ajuste...
                         </div>
                     )}
-                     <AnimatePresence>
-                       {feedbackMessage && !isSaving && ( // Mostrar solo cuando no esté guardando
+                     {/* --- MODIFICADO: Renderizado de Feedback simplificado --- */}
+                     {/* Usamos AnimatePresence para la animación, pero renderizamos directamente el div si hay mensaje */}
+                    <AnimatePresence>
+                       {feedbackMessage && !isSaving && (
                             <motion.div
-                                key={feedbackMessage.message} // Re-animar si cambia el mensaje
+                                key={feedbackMessage.message}
                                 className={`px-4 py-2 rounded-md text-sm font-medium inline-block ${ feedbackMessage.type === 'success' ? 'bg-green-600/80 text-white' : 'bg-red-600/80 text-white' }`}
                                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                             >
@@ -266,6 +269,7 @@ function AdminPage() {
                             </motion.div>
                        )}
                     </AnimatePresence>
+                     {/* --- FIN MODIFICACIÓN --- */}
                 </div>
 
             </motion.div> {/* Fin Sección Ajustes Generales */}
@@ -298,7 +302,7 @@ function AdminPage() {
 
                  {/* Mostrar resultados si se han cargado */}
                  {voteResults && !isLoadingVotes && (
-                    <div className="mt-4 max-h-96 overflow-y-auto pr-2"> {/* Scroll si hay muchos resultados */}
+                    <div className="mt-4 max-h-96 overflow-y-auto pr-2">
                         {voteResults.length === 0 ? (
                             <p className="text-center text-gray-500 italic mt-4">Aún no hay votos registrados.</p>
                         ) : (
@@ -317,9 +321,8 @@ function AdminPage() {
                  )}
             </motion.div> {/* Fin Sección Resultados Votaciones */}
 
-        </div> {/* Closing inner centering container */}
+        </div> // Closing inner centering container <<< ESTE ES EL CIERRE DEL DIV INTERNO
     ); // Closing return statement
-} // Closing AdminPage component function
+} // Closing AdminPage component function <<< ESTE ES EL CIERRE DE LA FUNCION
 
-export default AdminPage;
-
+export default AdminPage; // Exportación final
