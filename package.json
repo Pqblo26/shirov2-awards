@@ -8,11 +8,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@vercel/kv": "^3.0.0",
     "buffer": "^6.0.3",
     "disqus-react": "^1.1.6",
     "framer-motion": "^10.16.1",
     "gray-matter": "^4.0.3",
+    "html2canvas": "^1.4.1",
     "iron-session": "^8.0.4",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.487.0",

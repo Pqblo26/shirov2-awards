@@ -271,4 +271,50 @@ collections:
           # --- FIN CAMPO AÑADIDO ---
           - { label: "Info Extra (Opcional)", name: "nominee_extra", widget: "string", required: false, hint: "Ej: Estudio, Artista, Personaje..." }
 
-# ... (colección premios) ...
+# ... (backend, media_folder, y otras colecciones existentes van aquí arriba) ...
+
+  # --- NUEVA COLECCIÓN: Anime de Temporada (Ranking) ---
+  - name: "seasonal_anime"             # Identificador de la colección
+    label: "Anime de Temporada (Ranking)" # Nombre visible en el CMS
+    label_singular: "Anime de Temporada" # Nombre para un solo item
+    folder: "content/seasonal_anime"   # Carpeta donde se guardarán los archivos .md
+    create: true                      # Permitir crear nuevas entradas de anime
+    delete: true                      # Permitir borrar entradas
+    slug: "{{slug}}"                  # Usar el campo slug dedicado como nombre de archivo
+    summary: "{{fields.title}} ({{fields.season}} {{fields.year}})" # Resumen visible en la lista del CMS
+    fields:                           # Campos para cada anime
+      - label: "Título del Anime"
+        name: "title"
+        widget: "string"
+        required: true
+      - label: "Slug (Identificador Corto)"
+        name: "slug"
+        widget: "string"
+        required: true
+        hint: "Identificador único para este anime (ej: sousou-no-frieren). Usar minúsculas, números, guiones."
+        pattern: ['^[a-z0-9-]+$', "Usar solo minúsculas, números y guiones"]
+      - label: "Imagen Horizontal (Banner/Key Visual)"
+        name: "image_horizontal"
+        widget: "image"
+        required: true
+        hint: "Imagen representativa en formato apaisado para la lista (idealmente 100px de alto o similar)."
+      - label: "Temporada"
+        name: "season"
+        widget: "select"
+        options: ["Invierno", "Primavera", "Verano", "Otoño"]
+        required: true
+      - label: "Año"
+        name: "year"
+        widget: "number"
+        value_type: "int"
+        required: true
+        min: 2020 # O el año que quieras como mínimo
+      - label: "Activo para Ranking Actual"
+        name: "is_active_for_ranking"
+        widget: "boolean"
+        default: true
+        required: false
+        hint: "Marcar si este anime debe aparecer en la lista del ranking semanal actual."
+      # Podrías añadir más campos si los necesitas (ej: estudio, enlace MAL...)
+
+# ... (resto de las colecciones: traducciones, wip_items, premios, votaciones) ...
