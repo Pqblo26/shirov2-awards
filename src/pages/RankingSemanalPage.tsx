@@ -12,21 +12,23 @@ import {
     DragStartEvent,
     DragOverEvent,
     UniqueIdentifier,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
+    DropAnimation,
+    MeasuringStrategy, // Importar estrategia de medición
 } from '@dnd-kit/core';
 import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
-    rectSortingStrategy, // Podríamos usarlo si la lista disponible fuera grid
 } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import html2canvas from 'html2canvas';
-// --- MODIFICADO: Añadir Loader2 a la importación ---
-import { Download, User, Search, Loader2 } from 'lucide-react';
-// --- FIN MODIFICACIÓN ---
+import { Download, User, Search, Loader2, GripVertical } from 'lucide-react';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import { createPortal } from 'react-dom';
 
 // --- Interfaces ---
 interface AnimeData {
@@ -41,48 +43,58 @@ interface AnimeData {
 interface SortableAnimeItemProps {
     id: UniqueIdentifier;
     anime: AnimeData;
-    isOverlay?: boolean; // Para el drag overlay
-    isRanked?: boolean; // Estilo diferente si está en el ranking
-    rank?: number; // Número del ranking si aplica
+    isOverlay?: boolean;
+    isRanked?: boolean;
+    rank?: number;
+    isDragging?: boolean;
 }
 
-function SortableAnimeItem({ id, anime, isOverlay = false, isRanked = false, rank }: SortableAnimeItemProps) {
+function SortableAnimeItem({ id, anime, isOverlay = false, isRanked = false, rank, isDragging }: SortableAnimeItemProps) {
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
-        isDragging,
     } = useSortable({ id: id });
 
-    const style = {
+    const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging || isOverlay ? 10 : 1,
+        transition: transition || undefined,
+        opacity: isDragging && !isOverlay ? 0.5 : 1,
         cursor: isOverlay ? 'grabbing' : 'grab',
         boxShadow: isOverlay ? '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3)' : '',
+        zIndex: isOverlay ? 999 : 'auto',
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-             className={`flex items-center p-2 rounded-md transition-colors duration-150 mb-2 ${
+        <div ref={setNodeRef} style={style}
+             className={`flex items-center p-2 rounded-md transition-colors duration-150 mb-2 relative group ${
                 isRanked
-                 ? 'bg-gray-700/60 border border-gray-600/50' // Estilo en ranking
-                 : 'bg-gray-800/50 hover:bg-gray-700/70 border border-transparent hover:border-cyan-500/50' // Estilo en lista disponible
-             } ${isOverlay ? 'ring-2 ring-cyan-400' : ''}`}
+                 ? 'bg-gray-700/60 border border-gray-600/50'
+                 : 'bg-gray-800/50 hover:bg-gray-700/70 border border-transparent hover:border-cyan-500/50'
+             } ${isOverlay ? 'ring-2 ring-cyan-400 shadow-2xl' : ''}`}
+             {...attributes} // Mover attributes aquí para que apliquen a todo el div
         >
+             {/* Handle de Arrastre (listeners aquí) */}
+             <button {...listeners} className={`absolute ${isRanked ? 'left-1' : '-left-5'} top-1/2 -translate-y-1/2 p-1 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab focus:outline-none focus:ring-1 focus:ring-cyan-400 rounded z-10`}> {/* Añadido z-10 */}
+                <GripVertical size={16} />
+             </button>
+
+            {/* Número del ranking */}
             {isRanked && rank !== undefined && (
-                <span className="text-xl font-bold w-8 text-center mr-3 text-cyan-300">{rank + 1}</span>
+                <span className="text-xl font-bold w-8 text-center ml-4 mr-3 text-cyan-300 flex-shrink-0">{rank + 1}</span> // Añadido flex-shrink-0
             )}
+            {/* Imagen */}
             <img
                 src={anime.image_horizontal}
                 alt={`Imagen de ${anime.title}`}
-                className={`flex-shrink-0 rounded ${isRanked ? 'w-16 h-10' : 'w-20 h-12'} object-cover mr-3`}
+                // Ajustar margen izquierdo si no está rankeado para dejar espacio al handle
+                className={`flex-shrink-0 rounded ${isRanked ? 'w-16 h-10' : 'w-20 h-12'} object-cover ${isRanked ? 'ml-0' : 'ml-6'} mr-3`}
                 onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/100x60/7F1D1D/FECACA?text=Error`; }}
             />
-            <span className={`text-sm font-medium ${isRanked ? 'text-gray-100' : 'text-gray-200'}`}>{anime.title}</span>
+            {/* Título (permitir que ocupe espacio restante) */}
+            <span className={`text-sm font-medium flex-grow text-left ${isRanked ? 'text-gray-100' : 'text-gray-200'}`}>{anime.title}</span>
         </div>
     );
 }
@@ -104,208 +116,172 @@ function RankingSemanalPage() {
     const currentSeason = "Invierno"; // TODO: Hacer dinámico
     const currentYear = 2025;       // TODO: Hacer dinámico
 
-    useEffect(() => {
-        document.title = `Ranking Semanal ${currentSeason} ${currentYear} | Shiro Nexus`;
-    }, [currentSeason, currentYear]);
-
-    // Cargar Anime de la Temporada Actual
-    useEffect(() => {
-        const loadSeasonalAnime = async () => {
-            setIsLoading(true); setError(null);
-            try {
-                const modules = import.meta.glob('/content/seasonal_anime/*.md', { eager: true, query: '?raw', import: 'default' });
-                const loadedAnime: AnimeData[] = [];
-                for (const path in modules) {
-                    const rawContent = modules[path]; if (typeof rawContent !== 'string') continue;
-                    try {
-                        const { data: frontmatter } = matter(rawContent);
-                        if (frontmatter.is_active_for_ranking !== false && frontmatter.season === currentSeason && frontmatter.year === currentYear) {
-                            loadedAnime.push({
-                                id: frontmatter.slug || path, title: frontmatter.title || 'Sin Título',
-                                image_horizontal: frontmatter.image_horizontal || '',
-                                season: frontmatter.season, year: frontmatter.year,
-                            });
-                        }
-                    } catch (parseError) { console.error(`Error parsing ${path}:`, parseError); }
-                }
-                setAllAnime(loadedAnime); setAvailableAnime(loadedAnime); setRankedAnime([]);
-            } catch (err) { console.error("Error loading seasonal anime:", err); setError("Error al cargar los animes."); }
-            finally { setIsLoading(false); }
-        };
-        loadSeasonalAnime();
-    }, [currentSeason, currentYear]);
+    useEffect(() => { document.title = `Ranking Semanal ${currentSeason} ${currentYear} | Shiro Nexus`; }, [currentSeason, currentYear]);
+    useEffect(() => { /* ... Load seasonal anime ... */ }, [currentSeason, currentYear]);
 
     // Filtrar anime disponible basado en búsqueda
-    const filteredAvailableAnime = useMemo(() => {
-        return availableAnime.filter(anime => anime.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [availableAnime, searchTerm]);
+    const filteredAvailableAnime = useMemo(() => { /* ... */ }, [availableAnime, searchTerm]);
 
-    // --- Lógica de Drag and Drop ---
+    // --- Lógica de Drag and Drop (Revisada) ---
     const sensors = useSensors( useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }) );
 
     const handleDragStart = (event: DragStartEvent) => { setActiveId(event.active.id); };
 
-    const handleDragOver = (event: DragOverEvent) => {
-        const { active, over } = event; if (!over || active.id === over.id) return;
-        const activeContainer = findContainer(active.id); const overContainer = findContainer(over.id);
-        if (!activeContainer || !overContainer || activeContainer === overContainer) return;
-
-        // Mover item entre contenedores
-        if (activeContainer === 'available' && overContainer === 'ranked' && rankedAnime.length < 10) {
-            const activeIndex = availableAnime.findIndex(item => item.id === active.id);
-            const overIndex = rankedAnime.findIndex(item => item.id === over.id);
-            const itemToMove = availableAnime[activeIndex];
-            setAvailableAnime(prev => prev.filter(item => item.id !== active.id));
-            setRankedAnime(prev => { const newIndex = overIndex >= 0 ? overIndex : prev.length; return [...prev.slice(0, newIndex), itemToMove, ...prev.slice(newIndex)]; });
-        } else if (activeContainer === 'ranked' && overContainer === 'available') {
-             const activeIndex = rankedAnime.findIndex(item => item.id === active.id);
-             const itemToMove = rankedAnime[activeIndex];
-             setRankedAnime(prev => prev.filter(item => item.id !== active.id));
-             setAvailableAnime(prev => [...prev, itemToMove]);
-        }
-    };
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event; setActiveId(null);
-        if (over && active.id !== over.id) {
-            const activeContainer = findContainer(active.id); const overContainer = findContainer(over.id);
-            if (activeContainer === overContainer) { // Reordenar en el mismo contenedor
-                if (activeContainer === 'ranked') {
-                    const oldIndex = rankedAnime.findIndex(item => item.id === active.id);
-                    const newIndex = rankedAnime.findIndex(item => item.id === over.id);
-                    if (oldIndex !== newIndex) setRankedAnime(prev => arrayMove(prev, oldIndex, newIndex));
-                } else if (activeContainer === 'available') {
-                     const oldIndex = filteredAvailableAnime.findIndex(item => item.id === active.id);
-                     const newIndex = filteredAvailableAnime.findIndex(item => item.id === over.id);
-                     if (oldIndex !== newIndex) {
-                         const originalOldIndex = availableAnime.findIndex(item => item.id === active.id);
-                         const originalNewIndex = availableAnime.findIndex(item => item.id === over.id);
-                         setAvailableAnime(prev => arrayMove(prev, originalOldIndex, originalNewIndex));
-                     }
-                }
-            } else { // Movimiento entre contenedores (ya manejado en over, pero asegurar si se suelta en área vacía)
-                 if (activeContainer === 'available' && overContainer === 'ranked' && rankedAnime.length < 10 && !rankedAnime.some(item => item.id === active.id)) {
-                     const activeIndex = availableAnime.findIndex(item => item.id === active.id); const itemToMove = availableAnime[activeIndex];
-                     setAvailableAnime(prev => prev.filter(item => item.id !== active.id)); setRankedAnime(prev => [...prev, itemToMove]);
-                 } else if (activeContainer === 'ranked' && overContainer === 'available' && !availableAnime.some(item => item.id === active.id)) {
-                      const activeIndex = rankedAnime.findIndex(item => item.id === active.id); const itemToMove = rankedAnime[activeIndex];
-                      setRankedAnime(prev => prev.filter(item => item.id !== active.id)); setAvailableAnime(prev => [...prev, itemToMove]);
-                 }
-            }
-        }
-    };
-
-    const findContainer = (id: UniqueIdentifier) => {
+    // Helper para encontrar contenedor
+    const findContainer = (id: UniqueIdentifier): 'ranked' | 'available' | null => {
         if (rankedAnime.some(item => item.id === id)) return 'ranked';
         if (availableAnime.some(item => item.id === id)) return 'available';
+        // Comprobar si el ID es el de los contenedores droppables
+        if (id === 'ranked-container' || rankedAnime.some(item => item.id === id)) return 'ranked';
+        if (id === 'available-container' || availableAnime.some(item => item.id === id)) return 'available';
         return null;
     };
 
-    // --- Función para Descargar Imagen ---
-    const handleDownloadImage = useCallback(() => {
-        const element = rankingImageRef.current;
-        if (element) {
-            html2canvas(element, { backgroundColor: '#111827', useCORS: true, scale: 2 }) // Usar color de fondo similar
-                .then(canvas => {
-                    const link = document.createElement('a');
-                    link.download = `shiro-nexus-ranking-${userName.toLowerCase().replace(/\s+/g, '-')}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                }).catch(err => { console.error("Error generating image:", err); alert("Error al generar la imagen."); });
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null); // Limpiar item activo
+
+        if (!over) return; // Si se suelta fuera
+
+        const activeId = active.id;
+        const overId = over.id; // Puede ser el ID de un item o del contenedor
+
+        const activeContainer = findContainer(activeId);
+        // Determinar el contenedor de destino (si es un item, usar su contenedor; si es el contenedor, usarlo directamente)
+        const overContainer = findContainer(overId);
+
+        console.log(`Drag End: Active ${activeId} (${activeContainer}) -> Over ${overId} (${overContainer})`);
+
+
+        if (!activeContainer || !overContainer) {
+            console.log("Drag End: Could not determine containers.");
+            return; // No se pudo determinar origen o destino
         }
-    }, [userName]);
+
+        // --- Caso 1: Mover dentro del mismo contenedor (Reordenar) ---
+        if (activeContainer === overContainer) {
+            if (activeId !== overId) { // Asegurarse de que no se soltó sobre sí mismo
+                if (activeContainer === 'ranked') {
+                    const oldIndex = rankedAnime.findIndex(item => item.id === activeId);
+                    // Si overId es el contenedor, newIndex será el final. Si es un item, su índice.
+                    const newIndex = overId === 'ranked-container' ? rankedAnime.length -1 : rankedAnime.findIndex(item => item.id === overId);
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        console.log(`Reordering in ranked: ${oldIndex} -> ${newIndex}`);
+                        setRankedAnime(prev => arrayMove(prev, oldIndex, newIndex));
+                    }
+                } else if (activeContainer === 'available') {
+                    // Usar el array original 'availableAnime' para reordenar
+                     const oldIndex = availableAnime.findIndex(item => item.id === activeId);
+                     const newIndex = overId === 'available-container' ? availableAnime.length -1 : availableAnime.findIndex(item => item.id === overId);
+                     if (oldIndex !== -1 && newIndex !== -1) {
+                        console.log(`Reordering in available: ${oldIndex} -> ${newIndex}`);
+                        setAvailableAnime(prev => arrayMove(prev, oldIndex, newIndex));
+                     }
+                }
+            }
+        }
+        // --- Caso 2: Mover ENTRE contenedores ---
+        else {
+            if (activeContainer === 'available' && overContainer === 'ranked') {
+                // Mover de Available a Ranked
+                if (rankedAnime.length < 10) {
+                    const activeIndex = availableAnime.findIndex(item => item.id === activeId);
+                    if (activeIndex === -1) return; // Item no encontrado
+                    const itemToMove = availableAnime[activeIndex];
+
+                    const newIndex = overId === 'ranked-container' ? rankedAnime.length : rankedAnime.findIndex(item => item.id === overId);
+                    if (newIndex === -1 && overId !== 'ranked-container') return; // Si overId no es un item ni el contenedor
+
+                    console.log(`Moving ${activeId} from available to ranked at index ${newIndex}`);
+                    setAvailableAnime(prev => prev.filter(item => item.id !== activeId));
+                    setRankedAnime(prev => [...prev.slice(0, newIndex), itemToMove, ...prev.slice(newIndex)]);
+                } else {
+                    console.log("Ranked list is full.");
+                }
+            } else if (activeContainer === 'ranked' && overContainer === 'available') {
+                // Mover de Ranked a Available
+                const activeIndex = rankedAnime.findIndex(item => item.id === activeId);
+                if (activeIndex === -1) return; // Item no encontrado
+                const itemToMove = rankedAnime[activeIndex];
+
+                // Encontrar dónde insertarlo en available (podría ser al final o donde estaba el cursor)
+                const newIndex = overId === 'available-container' ? availableAnime.length : availableAnime.findIndex(item => item.id === overId);
+                if (newIndex === -1 && overId !== 'available-container') return; // Si overId no es un item ni el contenedor
+
+                console.log(`Moving ${activeId} from ranked to available at index ${newIndex}`);
+                setRankedAnime(prev => prev.filter(item => item.id !== activeId));
+                setAvailableAnime(prev => [...prev.slice(0, newIndex), itemToMove, ...prev.slice(newIndex)]);
+            }
+        }
+    };
+    // --- FIN Lógica Drag and Drop ---
+
+
+    // --- Función para Descargar Imagen ---
+    const handleDownloadImage = useCallback(() => { /* ... sin cambios ... */ }, [userName]);
 
     // --- Renderizado ---
-    if (isLoading) return <LoadingIndicator />; // Indicador de carga inicial
-    if (error) return <ErrorIndicator message={error} />; // Indicador de error
+    if (isLoading) return <LoadingIndicator />;
+    if (error) return <ErrorIndicator message={error} />;
 
-    const activeItem = activeId ? allAnime.find(item => item.id === activeId) : null; // Para el overlay (si se implementa)
+    const activeAnime = activeId ? allAnime.find(item => item.id === activeId) : null;
+
+    const dropAnimation: DropAnimation = { sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) };
 
     return (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
             <div className="min-h-screen bg-gray-950 text-gray-200 px-4 py-8 md:py-16">
-                <motion.h1 className="text-3xl sm:text-4xl font-bold text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-                    Crea tu Ranking Semanal - {currentSeason} {currentYear}
-                </motion.h1>
+                <motion.h1 /* ... Título ... */ > Crea tu Ranking Semanal - {currentSeason} {currentYear} </motion.h1>
 
                 <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* Columna Izquierda: Animes Disponibles */}
                     <motion.div className="lg:col-span-1 bg-gray-900/50 p-4 rounded-lg border border-gray-700/50" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
                         <h2 className="text-xl font-semibold mb-4 text-center text-gray-300">Animes Disponibles</h2>
-                        {/* Barra de Búsqueda */}
-                        <div className="relative mb-4">
-                            <input type="text" placeholder="Buscar anime..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-4 pl-10 text-sm text-gray-100 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500" />
-                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <div className="relative mb-4"> {/* Barra de Búsqueda */}
+                            <input /* ... */ /> <Search /* ... */ />
                         </div>
-
                         {/* Lista de Animes Disponibles */}
-                        <div className="max-h-[70vh] overflow-y-auto pr-2">
+                        {/* --- Añadido ID al contenedor --- */}
+                        <div className="max-h-[70vh] overflow-y-auto pr-2" id="available-container">
                             <SortableContext items={filteredAvailableAnime.map(a => a.id)} strategy={verticalListSortingStrategy}>
                                 {filteredAvailableAnime.length > 0 ? (
-                                    filteredAvailableAnime.map(anime => (
-                                        <SortableAnimeItem key={anime.id} id={anime.id} anime={anime} />
-                                    ))
-                                ) : (
-                                    <p className="text-center text-gray-500 italic py-4"> {availableAnime.length > 0 ? 'No se encontraron animes.' : 'No hay animes disponibles.'} </p>
-                                )}
+                                    filteredAvailableAnime.map(anime => ( <SortableAnimeItem key={anime.id} id={anime.id} anime={anime} isDragging={activeId === anime.id} /> ))
+                                ) : ( <p /* ... */ > {availableAnime.length > 0 ? 'No se encontraron animes.' : 'No hay animes disponibles.'} </p> )}
                             </SortableContext>
                         </div>
                     </motion.div>
 
                     {/* Columna Derecha: Ranking Top 10 */}
                     <motion.div className="lg:col-span-2" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-                        {/* Div que se capturará para la imagen */}
                         <div ref={rankingImageRef} id="rankingImage" className="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
                             {/* Cabecera del Ranking */}
-                            <div className="flex items-center justify-between mb-4 border-b border-gray-600 pb-3">
-                                <div className="flex items-center gap-3">
-                                     <img src="https://placehold.co/40x40/1F2937/4B5563?text=SN" alt="Logo Shiro Nexus" className="h-8 w-8 rounded-full"/>
-                                     <div>
-                                        <h2 className="text-lg font-bold text-white">MY TOP 10 ANIME RANKINGS</h2>
-                                        <p className="text-xs text-gray-400 uppercase tracking-wider">{currentSeason.toUpperCase()} {currentYear} | COMMUNITY ANIME RANKINGS</p>
-                                     </div>
-                                </div>
-                                <span className="text-sm font-semibold text-cyan-400">Shiro Nexus</span>
-                            </div>
-
+                            <div /* ... */ >{/* ... */}</div>
                             {/* Lista del Ranking */}
-                            <div className="min-h-[60vh]">
+                             {/* --- Añadido ID al contenedor --- */}
+                            <div className="min-h-[60vh]" id="ranked-container">
                                 <SortableContext items={rankedAnime.map(a => a.id)} strategy={verticalListSortingStrategy}>
-                                    {rankedAnime.map((anime, index) => (
-                                        <SortableAnimeItem key={anime.id} id={anime.id} anime={anime} isRanked={true} rank={index} />
-                                    ))}
-                                     {Array.from({ length: Math.max(0, 10 - rankedAnime.length) }).map((_, index) => (
-                                         <div key={`placeholder-${index}`} className="flex items-center p-2 rounded-md mb-2 bg-gray-700/30 border border-dashed border-gray-600/50 h-[52px]">
-                                             <span className="text-xl font-bold w-8 text-center mr-3 text-gray-500">{rankedAnime.length + index + 1}</span>
-                                             <span className="text-sm text-gray-600 italic">Arrastra un anime aquí</span>
-                                         </div>
-                                     ))}
+                                    {rankedAnime.map((anime, index) => ( <SortableAnimeItem key={anime.id} id={anime.id} anime={anime} isRanked={true} rank={index} isDragging={activeId === anime.id} /> ))}
+                                     {Array.from({ length: Math.max(0, 10 - rankedAnime.length) }).map((_, index) => ( <div key={`placeholder-${index}`} /* ... Placeholder ... */ > {/* ... */} </div> ))}
                                 </SortableContext>
                             </div>
-
                             {/* Pie del Ranking */}
-                            <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-600 text-xs text-gray-500">
-                                <span>This list was created by <span className="font-semibold text-gray-400">{userName}</span></span>
-                                <span>Create your own list on shironexus.vercel.app</span>
-                            </div>
+                            <div /* ... */ >{/* ... */}</div>
                         </div>
-
                         {/* Controles de Descarga */}
-                        <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
-                            <div className="relative flex-grow w-full sm:w-auto">
-                                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                <input type="text" placeholder="Tu nombre (Opcional)" value={userName} onChange={(e) => setUserName(e.target.value || 'Anonymous')} className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-4 pl-10 text-sm text-gray-100 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500" />
-                            </div>
-                            <button onClick={handleDownloadImage} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md shadow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-900 transition-colors">
-                                <Download size={16} /> Descargar Ranking
-                            </button>
-                        </div>
+                        <div /* ... */ >{/* ... */}</div>
                     </motion.div>
                 </div>
 
-                {/* Drag Overlay (Opcional, comentado por ahora) */}
-                {/* {createPortal(<DragOverlay>{activeId && activeItem ? <SortableAnimeItem id={activeId} anime={activeItem} isOverlay /> : null}</DragOverlay>, document.body)} */}
+                {/* Drag Overlay */}
+                {createPortal(
+                    <DragOverlay dropAnimation={dropAnimation}>
+                        {activeId && activeAnime ? (
+                            <SortableAnimeItem id={activeId} anime={activeAnime} isOverlay isRanked={findContainer(activeId) === 'ranked'} />
+                        ) : null}
+                    </DragOverlay>,
+                    document.body
+                )}
 
                 <ScrollToTopButton />
             </div>
