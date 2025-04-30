@@ -12,8 +12,9 @@ import {
     DragStartEvent,
     UniqueIdentifier,
     DragOverlay,
-    defaultDropAnimationSideEffects,
+    defaultDropAnimationSideEffects, // Importar para dropAnimation
     DropAnimation,
+    useDroppable, // Importar useDroppable
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -24,7 +25,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import html2canvas from 'html2canvas';
-import { Download, User, Search, Loader2, GripVertical } from 'lucide-react';
+import { Download, User, Search, Loader2, GripVertical } from 'lucide-react'; // Asegurarse que GripVertical está si se usa handle
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import { createPortal } from 'react-dom';
 
@@ -37,7 +38,7 @@ interface AnimeData {
     year: number;
 }
 
-// --- Componente para un Anime Arrastrable ---
+// --- Componente para un Anime Arrastrable (Restaurado) ---
 interface SortableAnimeItemProps {
     id: UniqueIdentifier;
     anime: AnimeData;
@@ -50,7 +51,7 @@ interface SortableAnimeItemProps {
 function SortableAnimeItem({ id, anime, isOverlay = false, isRanked = false, rank, isDragging }: SortableAnimeItemProps) {
     const {
         attributes,
-        listeners,
+        listeners, // Aplicar al div principal
         setNodeRef,
         transform,
         transition,
@@ -73,6 +74,8 @@ function SortableAnimeItem({ id, anime, isOverlay = false, isRanked = false, ran
                  : 'bg-gray-800/50 hover:bg-gray-700/70 border border-transparent hover:border-cyan-500/50'
              } ${isOverlay ? 'ring-2 ring-cyan-400 shadow-2xl' : ''}`}
         >
+            {/* Handle Opcional (Comentado) */}
+            {/* <button {...listeners} className={`absolute ${isRanked ? 'left-1' : '-left-5'} ...`}><GripVertical size={16} /></button> */}
             {isRanked && rank !== undefined && (
                 <span className="text-xl font-bold w-8 text-center mr-3 text-cyan-300 flex-shrink-0">{rank + 1}</span>
             )}
@@ -87,27 +90,44 @@ function SortableAnimeItem({ id, anime, isOverlay = false, isRanked = false, ran
     );
 }
 
+// --- Componente Contenedor Droppable (Necesario) ---
+interface DroppableContainerProps {
+    id: string;
+    children: React.ReactNode;
+    className?: string;
+}
+
+function DroppableContainer({ id, children, className }: DroppableContainerProps) {
+    const { setNodeRef, isOver } = useDroppable({ id });
+    const containerStyle: React.CSSProperties = {
+        border: isOver ? '2px dashed #63b3ed' : '2px dashed transparent', // Borde visual opcional al pasar por encima
+        padding: '1px', // Evitar colapso de borde
+        borderRadius: '8px',
+        transition: 'border-color 0.2s ease-in-out',
+    };
+    return ( <div ref={setNodeRef} style={containerStyle} className={className}> {children} </div> );
+}
+
 
 // --- Componente Principal ---
 function RankingSemanalPage() {
+    // --- Estados Restaurados ---
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [allAnime, setAllAnime] = useState<AnimeData[]>([]);
-    const [availableAnime, setAvailableAnime] = useState<AnimeData[]>([]);
-    const [rankedAnime, setRankedAnime] = useState<AnimeData[]>([]);
-    const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+    const [allAnime, setAllAnime] = useState<AnimeData[]>([]); // Lista completa para buscar en overlay
+    const [availableAnime, setAvailableAnime] = useState<AnimeData[]>([]); // Lista izquierda
+    const [rankedAnime, setRankedAnime] = useState<AnimeData[]>([]); // Lista derecha (Top 10)
+    const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null); // ID del item arrastrándose
     const [userName, setUserName] = useState('Anonymous');
     const [searchTerm, setSearchTerm] = useState('');
-
     const rankingImageRef = useRef<HTMLDivElement>(null);
-
     const currentSeason = "Invierno";
     const currentYear = 2025;
 
+    // --- Effects Restaurados ---
     useEffect(() => { document.title = `Ranking Semanal ${currentSeason} ${currentYear} | Shiro Nexus`; }, [currentSeason, currentYear]);
 
-    // Cargar Anime de la Temporada Actual
-    useEffect(() => {
+    useEffect(() => { // Cargar Anime de la Temporada Actual
         const loadSeasonalAnime = async () => {
             setIsLoading(true); setError(null);
             try {
@@ -127,7 +147,9 @@ function RankingSemanalPage() {
                     } catch (parseError) { console.error(`Error parsing ${path}:`, parseError); }
                 }
                 loadedAnime.sort((a, b) => a.title.localeCompare(b.title));
-                setAllAnime(loadedAnime); setAvailableAnime(loadedAnime); setRankedAnime([]);
+                setAllAnime(loadedAnime); // Guardar todos para el overlay
+                setAvailableAnime(loadedAnime); // Inicialmente todos disponibles
+                setRankedAnime([]); // Ranking vacío
             } catch (err) { console.error("Error loading seasonal anime:", err); setError("Error al cargar los animes."); }
             finally { setIsLoading(false); }
         };
@@ -139,21 +161,12 @@ function RankingSemanalPage() {
         return availableAnime.filter(anime => anime.title.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [availableAnime, searchTerm]);
 
-    // --- AÑADIDO: useEffect para intentar forzar sincronización ---
-    useEffect(() => {
-        // Este efecto se ejecuta cada vez que availableAnime o rankedAnime cambian.
-        // A veces, esto puede ayudar a dnd-kit a reconocer los cambios de estado
-        // que ocurren al mover elementos entre listas.
-        console.log("Effect triggered due to available/ranked anime change.");
-    }, [availableAnime, rankedAnime]);
-    // --- FIN AÑADIDO ---
-
-    // --- Lógica de Drag and Drop ---
+    // --- Lógica de Drag and Drop (Basada en la prueba simple funcional) ---
     const sensors = useSensors( useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }) );
 
     const handleDragStart = (event: DragStartEvent) => { setActiveId(event.active.id); };
 
-    // Helper para encontrar contenedor
+    // Helper para encontrar contenedor (Usa los arrays de estado reales)
     const findContainer = (id: UniqueIdentifier | null): 'ranked' | 'available' | null => {
         if (!id) return null;
         if (id === 'ranked-container' || rankedAnime.some(item => item.id === id)) return 'ranked';
@@ -161,12 +174,12 @@ function RankingSemanalPage() {
         return null;
     };
 
-    // --- handleDragEnd (Usando la lógica de la v4 que SÍ intentaba mover) ---
+    // handleDragEnd (Lógica adaptada de la prueba simple)
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveId(null);
 
-        if (!over) { console.log("DragEnd: Dropped outside"); return; }
+        if (!over) return;
 
         const activeId = active.id;
         const overId = over.id;
@@ -176,7 +189,7 @@ function RankingSemanalPage() {
 
         console.log(`DragEnd: Active ${activeId} (${activeContainer}) -> Over ${overId} (${overContainer})`);
 
-        if (!activeContainer || !overContainer) { console.log("DragEnd: Could not determine valid containers."); return; }
+        if (!activeContainer || !overContainer) return;
 
         // --- Caso 1: Mover dentro del mismo contenedor (Reordenar) ---
         if (activeContainer === overContainer) {
@@ -187,7 +200,7 @@ function RankingSemanalPage() {
                     if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
                         setRankedAnime(prev => arrayMove(prev, oldIndex, newIndex));
                     }
-                } else if (activeContainer === 'available') {
+                } else { // activeContainer === 'available'
                      const oldIndex = availableAnime.findIndex(item => item.id === activeId);
                      const newIndex = overId === 'available-container' ? oldIndex : availableAnime.findIndex(item => item.id === overId);
                      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
@@ -203,16 +216,17 @@ function RankingSemanalPage() {
             let newIndex: number = -1;
 
             if (activeContainer === 'available' && overContainer === 'ranked') {
-                if (rankedAnime.length >= 10) { console.log("Ranked list is full."); return; }
+                if (rankedAnime.length >= 10) { console.log("Ranked list full"); return; }
                 oldIndex = availableAnime.findIndex(item => item.id === activeId);
                 if (oldIndex === -1) return;
                 itemToMove = availableAnime[oldIndex];
                 newIndex = overId === 'ranked-container' ? rankedAnime.length : rankedAnime.findIndex(item => item.id === overId);
                 if (newIndex === -1 && overId !== 'ranked-container') return;
                 const insertIndex = newIndex === -1 ? rankedAnime.length : newIndex;
-                console.log(`Moving ${activeId} from available[${oldIndex}] to ranked[${insertIndex}]`);
+
                 setAvailableAnime(prev => prev.filter(item => item.id !== activeId));
-                setRankedAnime(prev => { const newArray = [...prev]; newArray.splice(insertIndex, 0, itemToMove as AnimeData); return newArray; });
+                setRankedAnime(prev => [...prev.slice(0, insertIndex), itemToMove as AnimeData, ...prev.slice(insertIndex)]);
+
             } else if (activeContainer === 'ranked' && overContainer === 'available') {
                 oldIndex = rankedAnime.findIndex(item => item.id === activeId);
                 if (oldIndex === -1) return;
@@ -220,9 +234,9 @@ function RankingSemanalPage() {
                 newIndex = overId === 'available-container' ? availableAnime.length : availableAnime.findIndex(item => item.id === overId);
                 if (newIndex === -1 && overId !== 'available-container') return;
                 const insertIndex = newIndex === -1 ? availableAnime.length : newIndex;
-                console.log(`Moving ${activeId} from ranked[${oldIndex}] to available[${insertIndex}]`);
+
                 setRankedAnime(prev => prev.filter(item => item.id !== activeId));
-                setAvailableAnime(prev => { const newArray = [...prev]; newArray.splice(insertIndex, 0, itemToMove as AnimeData); return newArray; });
+                setAvailableAnime(prev => [...prev.slice(0, insertIndex), itemToMove as AnimeData, ...prev.slice(insertIndex)]);
             }
         }
     };
@@ -236,12 +250,13 @@ function RankingSemanalPage() {
     if (isLoading) return <LoadingIndicator />;
     if (error) return <ErrorIndicator message={error} />;
 
-    const activeAnime = activeId ? allAnime.find(item => item.id === activeId) : null;
+    // Encontrar el anime activo completo para el overlay
+    const activeAnime = activeId ? (availableAnime.find(item => item.id === activeId) || rankedAnime.find(item => item.id === activeId)) : null;
 
     const dropAnimation: DropAnimation = { sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) };
 
     return (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="min-h-screen bg-gray-950 text-gray-200 px-4 py-8 md:py-16">
                 <motion.h1 className="text-3xl sm:text-4xl font-bold text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
                     Crea tu Ranking Semanal - {currentSeason} {currentYear}
@@ -257,14 +272,14 @@ function RankingSemanalPage() {
                             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         </div>
 
-                        {/* Lista de Animes Disponibles */}
-                        <div className="max-h-[70vh] overflow-y-auto pr-2" id="available-container"> {/* ID Contenedor */}
+                        {/* Lista de Animes Disponibles - Envuelto en DroppableContainer */}
+                        <DroppableContainer id="available-container" className="max-h-[70vh] overflow-y-auto pr-2 space-y-2"> {/* Añadido space-y-2 */}
                             <SortableContext items={filteredAvailableAnime.map(a => a.id)} strategy={verticalListSortingStrategy}>
                                 {filteredAvailableAnime.length > 0 ? (
                                     filteredAvailableAnime.map(anime => ( <SortableAnimeItem key={anime.id} id={anime.id} anime={anime} isDragging={activeId === anime.id} /> ))
                                 ) : ( <p className="text-center text-gray-500 italic py-4"> {availableAnime.length > 0 ? 'No se encontraron animes.' : 'No hay animes disponibles.'} </p> )}
                             </SortableContext>
-                        </div>
+                        </DroppableContainer>
                     </motion.div>
 
                     {/* Columna Derecha: Ranking Top 10 */}
@@ -284,14 +299,14 @@ function RankingSemanalPage() {
                             </div>
                             {/* Fin Cabecera */}
 
-                            {/* Lista del Ranking */}
-                            <div className="min-h-[60vh]" id="ranked-container"> {/* ID Contenedor */}
+                            {/* Lista del Ranking - Envuelto en DroppableContainer */}
+                            <DroppableContainer id="ranked-container" className="min-h-[60vh] space-y-2"> {/* Añadido space-y-2 */}
                                 <SortableContext items={rankedAnime.map(a => a.id)} strategy={verticalListSortingStrategy}>
                                     {rankedAnime.map((anime, index) => ( <SortableAnimeItem key={anime.id} id={anime.id} anime={anime} isRanked={true} rank={index} isDragging={activeId === anime.id} /> ))}
                                      {Array.from({ length: Math.max(0, 10 - rankedAnime.length) }).map((_, index) => ( <div key={`placeholder-${index}`} className="flex items-center p-2 rounded-md mb-2 bg-gray-700/30 border border-dashed border-gray-600/50 h-[52px]"> <span className="text-xl font-bold w-8 text-center mr-3 text-gray-500">{rankedAnime.length + index + 1}</span> <span className="text-sm text-gray-600 italic">Arrastra un anime aquí</span> </div> ))}
                                 </SortableContext>
-                            </div>
-
+                            </DroppableContainer>
+                             {/* Fin Lista */}
                             {/* Pie del Ranking */}
                             <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-600 text-xs text-gray-500">
                                 <span>This list was created by <span className="font-semibold text-gray-400">{userName}</span></span>
